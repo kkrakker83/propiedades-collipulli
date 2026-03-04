@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Admin - Propiedades Collipulli</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aws-amplify/5.0.0/aws-amplify.min.js"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-2xl font-bold mb-4">Subir Nueva Propiedad</h2>
+        
+        <div class="mb-4">
+            <label class="block text-gray-700">Seleccionar Foto o Video:</label>
+            <input type="file" id="file-upload" class="mt-2 block w-full border border-gray-300 rounded-md p-2">
+        </div>
+
+        <button onclick="uploadFile()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            Subir a la nube
+        </button>
+
+        <p id="status" class="mt-4 text-sm text-gray-600"></p>
+    </div>
+
+    <script src="upload.js"></script>
+</body>
+</html>
