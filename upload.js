@@ -49,7 +49,7 @@ async function uploadFile() {
             level: 'public' // Lo hace visible para todos los clientes
         });
 
-        console.log("Resultado exitoso:", result);
+        console.log("Resultado exitoso:", result); 
         
         status.innerText = "✅ ¡Subida Exitosa! El archivo ya está en la nube.";
         status.className = "mt-4 text-sm text-green-600 font-bold";
