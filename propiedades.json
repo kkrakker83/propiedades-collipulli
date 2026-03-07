@@ -1,0 +1,12 @@
+[
+    {
+        "id": 1,
+        "titulo": "Casa Sector Los Jardines",
+        "precio": "$75.000.000",
+        "ubicacion": "Collipulli, Región de la Araucanía",
+        "dormitorios": 3,
+        "banos": 2,
+        "imagenUrl": "AQUÍ_IRÁ_LA_URL_DE_TU_FOTO_EN_S3",
+        "disponible": true
+    }
+]
