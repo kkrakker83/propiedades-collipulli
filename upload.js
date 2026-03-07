@@ -47,14 +47,9 @@ function sanitizeFileName(fileName) {
     .toLowerCase();
 }
 
-function generatePropertyId() {
-  return "prop-" + Date.now();
-}
-
 function renderPreview() {
   const preview = document.getElementById("preview");
   const files = Array.from(document.getElementById("file-upload").files);
-
   preview.innerHTML = "";
 
   if (!files.length) return;
@@ -65,8 +60,7 @@ function renderPreview() {
 
     const label = document.createElement("div");
     label.className = "text-xs font-bold text-gray-600 mb-2";
-    label.textContent = index === 0 ? "Archivo 1 (posible portada)" : `Archivo ${index + 1}`;
-
+    label.textContent = index === 0 ? "Archivo 1" : `Archivo ${index + 1}`;
     item.appendChild(label);
 
     if (file.type.startsWith("image/")) {
@@ -158,10 +152,27 @@ function uploadSingleFile(s3, file, key, onProgress) {
   });
 }
 
+function getNextIdFromCurrentJson() {
+  const textarea = document.getElementById("json-output").value.trim();
+
+  try {
+    const parsed = JSON.parse(textarea);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      const maxId = Math.max(...parsed.map(item => Number(item.id) || 0));
+      return maxId + 1;
+    }
+  } catch (e) {}
+
+  return null;
+}
+
 async function uploadFiles() {
   const titulo = document.getElementById("titulo").value.trim();
   const precio = document.getElementById("precio").value.trim();
   const ubicacion = document.getElementById("ubicacion").value.trim();
+  const dormitorios = parseInt(document.getElementById("dormitorios").value, 10);
+  const banos = parseInt(document.getElementById("banos").value, 10);
+  const disponible = document.getElementById("disponible").value === "true";
   const fileInput = document.getElementById("file-upload");
   const files = Array.from(fileInput.files);
   const uploadBtn = document.getElementById("upload-btn");
@@ -172,6 +183,11 @@ async function uploadFiles() {
 
   if (!titulo || !precio || !ubicacion) {
     setStatus("❌ Debes completar título, precio y ubicación.", "error");
+    return;
+  }
+
+  if (Number.isNaN(dormitorios) || Number.isNaN(banos)) {
+    setStatus("❌ Debes ingresar dormitorios y baños.", "error");
     return;
   }
 
@@ -187,8 +203,8 @@ async function uploadFiles() {
   }
 
   const s3 = createS3Client(credentials);
-  const propertyId = generatePropertyId();
   const uploadedUrls = [];
+  const baseStamp = Date.now();
 
   uploadBtn.disabled = true;
   uploadBtn.classList.add("opacity-60", "cursor-not-allowed");
@@ -199,7 +215,7 @@ async function uploadFiles() {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const safeName = sanitizeFileName(file.name);
-      const uniqueKey = `${PUBLIC_FOLDER}${propertyId}_${i + 1}_${Date.now()}_${safeName}`;
+      const uniqueKey = `${PUBLIC_FOLDER}${baseStamp}_${i + 1}_${safeName}`;
 
       setStatus(`⏳ Subiendo archivo ${i + 1} de ${files.length}: ${file.name}`, "info");
 
@@ -226,21 +242,26 @@ async function uploadFiles() {
     const portada = firstImage ? firstImage.url : uploadedUrls[0].url;
 
     const propertyJson = {
-      id: propertyId,
+      id: baseStamp,
       titulo: titulo,
       precio: precio,
       ubicacion: ubicacion,
+      dormitorios: dormitorios,
+      banos: banos,
       imagenUrl: portada,
-      galeria: uploadedUrls.map((item) => item.url)
+      disponible: disponible
     };
 
     jsonOutput.value = JSON.stringify(propertyJson, null, 2);
 
-    setStatus("✅ Propiedad subida correctamente. JSON generado listo para copiar.", "success");
+    setStatus("✅ Propiedad subida correctamente. JSON compatible generado.", "success");
 
     document.getElementById("titulo").value = "";
     document.getElementById("precio").value = "";
     document.getElementById("ubicacion").value = "";
+    document.getElementById("dormitorios").value = "";
+    document.getElementById("banos").value = "";
+    document.getElementById("disponible").value = "true";
     fileInput.value = "";
     document.getElementById("preview").innerHTML = "";
   } catch (err) {
@@ -254,14 +275,6 @@ async function uploadFiles() {
       localStorage.removeItem("aws_id");
       localStorage.removeItem("aws_secret");
       setStatus("❌ Credenciales AWS inválidas. Se borraron para volver a ingresarlas.", "error");
-      return;
-    }
-
-    if (
-      err.code === "AccessControlListNotSupported" ||
-      (err.message && err.message.includes("ACL"))
-    ) {
-      setStatus("❌ Tu bucket no permite ACLs. Ya dejé el código preparado sin ACL. Reintenta.", "error");
       return;
     }
 
