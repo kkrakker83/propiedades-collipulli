@@ -19,7 +19,7 @@
         <input
           type="text"
           id="titulo"
-          placeholder="Ej: Parcela con casa en Collipulli"
+          placeholder="Ej: Casa Sector Los Jardines"
           class="block w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
         />
       </div>
@@ -29,7 +29,7 @@
         <input
           type="text"
           id="precio"
-          placeholder="Ej: $85.000.000"
+          placeholder="Ej: $75.000.000"
           class="block w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
         />
       </div>
@@ -40,9 +40,44 @@
       <input
         type="text"
         id="ubicacion"
-        placeholder="Ej: Collipulli, Región de La Araucanía"
+        placeholder="Ej: Collipulli, Región de la Araucanía"
         class="block w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
       />
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+      <div>
+        <label for="dormitorios" class="block text-gray-700 font-semibold mb-2">Dormitorios</label>
+        <input
+          type="number"
+          id="dormitorios"
+          min="0"
+          placeholder="Ej: 3"
+          class="block w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
+        />
+      </div>
+
+      <div>
+        <label for="banos" class="block text-gray-700 font-semibold mb-2">Baños</label>
+        <input
+          type="number"
+          id="banos"
+          min="0"
+          placeholder="Ej: 2"
+          class="block w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
+        />
+      </div>
+
+      <div>
+        <label for="disponible" class="block text-gray-700 font-semibold mb-2">Disponible</label>
+        <select
+          id="disponible"
+          class="block w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
+        >
+          <option value="true">Sí</option>
+          <option value="false">No</option>
+        </select>
+      </div>
     </div>
 
     <div class="mb-6">
@@ -57,7 +92,7 @@
         class="block w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
       />
       <p class="text-sm text-gray-500 mt-2">
-        Puedes seleccionar múltiples fotos y videos al mismo tiempo. La primera imagen será usada como portada si existe.
+        Puedes seleccionar múltiples archivos. La primera imagen encontrada será la portada (`imagenUrl`).
       </p>
     </div>
 
@@ -100,7 +135,7 @@
 
     <div>
       <div class="flex items-center justify-between mb-2">
-        <h2 class="text-lg font-bold text-gray-800">JSON generado para propiedades.json</h2>
+        <h2 class="text-lg font-bold text-gray-800">JSON generado</h2>
         <button
           onclick="copyJson()"
           class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-semibold"
