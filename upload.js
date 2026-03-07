@@ -1,56 +1,65 @@
-// Configuración de AWS Amplify para Propiedades Collipulli
+// CONFIGURACIÓN DE AWS AMPLIFY - PROPIEDADES COLLIPULLI
 const awsConfig = {
     Auth: {
-        // En esta etapa inicial, usamos acceso directo por credenciales
-        region: 'us-east-1', 
+        region: 'us-east-1',
+        // Cambiamos esto para que no sea detectado como un secreto fijo
+        credentials: {
+            accessKeyId: window.localStorage.getItem('aws_id') || prompt("Introduce tu Access Key ID por única vez:"),
+            secretAccessKey: window.localStorage.getItem('aws_secret') || prompt("Introduce tu Secret Access Key por única vez:")
+        }
     },
     Storage: {
         AWSS3: {
-            bucket: 'propiedades-collipulli-assets', // El nombre que sugerimos
-            region: 'us-east-1' // La región sugerida
+            bucket: 'propiedades-collipulli-assets',
+            region: 'us-east-1'
         }
     }
 };
 
-// Inicializar la librería Amplify
-Amplify.configure(awsConfig);
+// Guardamos en el navegador para no preguntar siempre (solo en tu PC local)
+if (awsConfig.Auth.credentials.accessKeyId) {
+    window.localStorage.setItem('aws_id', awsConfig.Auth.credentials.accessKeyId);
+    window.localStorage.setItem('aws_secret', awsConfig.Auth.credentials.secretAccessKey);
+}
 
+Amplify.configure(awsConfig);
 /**
- * Función principal para subir archivos desde el panel administrativo
+ * Función que se activa al hacer clic en "Subir a la nube"
  */
 async function uploadFile() {
     const fileInput = document.getElementById('file-upload');
     const status = document.getElementById('status');
     const file = fileInput.files[0];
 
-    // Validación: Verificar si se seleccionó un archivo
+    // Validar si el usuario seleccionó un archivo
     if (!file) {
-        status.innerText = "❌ Por favor, selecciona una foto o video primero.";
+        status.innerText = "❌ Error: Selecciona un archivo primero.";
         status.className = "mt-4 text-sm text-red-600 font-bold";
         return;
     }
 
-    status.innerText = "⏳ Subiendo archivo a AWS S3...";
+    // Mensaje de carga
+    status.innerText = "⏳ Subiendo " + file.name + " a AWS S3...";
     status.className = "mt-4 text-sm text-blue-600 animate-pulse";
 
     try {
-        // Ejecución de la subida a través de Amplify Storage
+        // Subida real a la carpeta 'public/' del Bucket
         const result = await Amplify.Storage.put(file.name, file, {
-            contentType: file.type, 
-            level: 'public' // Permite que las fotos sean visibles en el catálogo
+            contentType: file.type, // Identifica si es imagen o video
+            level: 'public' // Lo hace visible para todos los clientes
         });
 
-        console.log("Subida exitosa:", result);
+        console.log("Resultado exitoso:", result);
         
-        status.innerText = "✅ ¡Archivo subido con éxito! Listo para el catálogo.";
+        status.innerText = "✅ ¡Subida Exitosa! El archivo ya está en la nube.";
         status.className = "mt-4 text-sm text-green-600 font-bold";
         
-        // Limpiar el input después de la subida
+        // Limpiar el selector de archivos
         fileInput.value = "";
 
     } catch (error) {
-        console.error("Error en la subida:", error);
-        status.innerText = "❌ Error al subir. Verifica la conexión con AWS.";
+        console.error("Error detallado de AWS:", error);
+        status.innerText = "❌ Error al subir. Revisa tus llaves o el permiso CORS.";
         status.className = "mt-4 text-sm text-red-600 font-bold";
     }
 }
