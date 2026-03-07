@@ -5,22 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Admin - Propiedades Collipulli</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/aws-amplify/4.3.46/aws-amplify.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aws-sdk/2.1226.0/aws-sdk.min.js"></script>
 </head>
-<body class="bg-gray-100 p-8">
-    <div class="max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md">
-        <h2 class="text-2xl font-bold mb-4">Subir Nueva Propiedad</h2>
+<body class="bg-gray-100 p-4 md:p-8">
+    <div class="max-w-lg mx-auto bg-white p-6 rounded-2xl shadow-xl text-center">
+        <h2 class="text-2xl font-bold mb-6 text-blue-900">Panel de Carga - S3</h2>
         
-        <div class="mb-4">
-            <label class="block text-gray-700">Seleccionar Foto o Video:</label>
-            <input type="file" id="file-upload" class="mt-2 block w-full border border-gray-300 rounded-md p-2">
+        <div class="mb-6 text-left">
+            <label class="block text-gray-700 font-semibold mb-2">Seleccionar archivo:</label>
+            <input type="file" id="file-upload" class="block w-full border border-gray-300 rounded-lg p-2 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none">
         </div>
 
-        <button onclick="uploadFile()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+        <button onclick="uploadFile()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 w-full font-bold transition-all shadow-lg active:scale-95">
             Subir a la nube
         </button>
 
-        <p id="status" class="mt-4 text-sm text-gray-600"></p>
+        <p id="status" class="mt-4 text-sm font-medium min-h-[24px]"></p>
+        
+        <hr class="my-6 border-gray-200">
+        
+        <button onclick="localStorage.clear(); location.reload();" class="text-xs text-gray-400 hover:text-red-500 underline transition-colors">
+            Cerrar sesión / Cambiar llaves de acceso
+        </button>
     </div>
 
     <script src="upload.js"></script>
