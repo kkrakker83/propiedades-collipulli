@@ -1,73 +1,34 @@
-/**
- * Lógica para subir archivos a Amazon S3
- */
-async function uploadFile() {
-    const fileInput = document.getElementById('file-upload');
-    const status = document.getElementById('status');
-    const file = fileInput.files[0];
-
-    // 1. Validar que exista un archivo seleccionado
-    if (!file) {
-        status.innerText = "❌ Por favor, selecciona un archivo primero.";
-        status.className = "mt-4 text-sm text-red-600 font-bold";
-        return;
-    }
-
-    // 2. Gestión de Credenciales (Evita el bloqueo de GitHub Secret Scanning)
-    let accessKey = localStorage.getItem('aws_id');
-    let secretKey = localStorage.getItem('aws_secret');
-
-    if (!accessKey || !secretKey) {
-        accessKey = prompt("Introduce tu Access Key ID (AKIA...):");
-        secretKey = prompt("Introduce tu Secret Access Key:");
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Admin - Propiedades Collipulli</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aws-sdk/2.1226.0/aws-sdk.min.js"></script>
+</head>
+<body class="bg-gray-100 p-4 md:p-8">
+    <div class="max-w-lg mx-auto bg-white p-6 rounded-2xl shadow-xl text-center">
+        <h2 class="text-2xl font-bold mb-6 text-blue-900">Panel de Carga - S3</h2>
         
-        if (accessKey && secretKey) {
-            localStorage.setItem('aws_id', accessKey.trim());
-            localStorage.setItem('aws_secret', secretKey.trim());
-        } else {
-            status.innerText = "❌ Acceso denegado: Se requieren las llaves.";
-            return;
-        }
-    }
+        <div class="mb-6 text-left">
+            <label class="block text-gray-700 font-semibold mb-2">Seleccionar archivo:</label>
+            <input type="file" id="file-upload" class="block w-full border border-gray-300 rounded-lg p-2 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
 
-    // 3. Configurar AWS SDK con tus datos
-    AWS.config.update({
-        accessKeyId: accessKey,
-        secretAccessKey: secretKey,
-        region: 'us-east-1' 
-    });
+        <button onclick="uploadFile()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 w-full font-bold transition-all shadow-lg active:scale-95">
+            Subir a la nube
+        </button>
 
-    const s3 = new AWS.S3();
-    
-    // Configuración del envío
-    const params = {
-        Bucket: 'propiedades-collipulli-assets', // Tu bucket
-        Key: 'public/' + Date.now() + "_" + file.name, // Nombre único con fecha
-        Body: file,
-        ContentType: file.type,
-        ACL: 'public-read' // Permiso para lectura pública
-    };
+        <p id="status" class="mt-4 text-sm font-medium min-h-[24px]"></p>
+        
+        <hr class="my-6 border-gray-200">
+        
+        <button onclick="localStorage.clear(); location.reload();" class="text-xs text-gray-400 hover:text-red-500 underline transition-colors">
+            Cerrar sesión / Cambiar llaves de acceso
+        </button>
+    </div>
 
-    // 4. Proceso de subida
-    status.innerText = "⏳ Conectando con AWS y subiendo...";
-    status.className = "mt-4 text-sm text-blue-600 animate-pulse font-bold";
-
-    s3.upload(params, function(err, data) {
-        if (err) {
-            console.error("Error de AWS:", err);
-            status.innerText = "❌ Error: " + err.message;
-            status.className = "mt-4 text-sm text-red-600 font-bold";
-            
-            // Si el error es de credenciales, limpiamos para reintentar
-            if(err.code === 'SignatureDoesNotMatch' || err.code === 'InvalidAccessKeyId') {
-                localStorage.clear();
-                status.innerText += " (Llaves incorrectas, se han borrado)";
-            }
-        } else {
-            console.log("Subida exitosa:", data.Location);
-            status.innerText = "✅ ¡SUBIDA EXITOSA! El archivo ya está en la nube.";
-            status.className = "mt-4 text-sm text-green-600 font-bold";
-            fileInput.value = ""; // Limpiar el formulario
-        }
-    });
-}
+    <script src="upload.js"></script>
+</body>
+</html>
