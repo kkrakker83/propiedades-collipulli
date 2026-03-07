@@ -1,49 +1,56 @@
-// Configuración de AWS Amplify
+// Configuración de AWS Amplify para Propiedades Collipulli
 const awsConfig = {
     Auth: {
-        identityPoolId: '', // Lo dejaremos vacío por ahora para usar acceso directo
-        region: 'us-east-1', // La región que elegiste (ej: us-east-1)
-        userPoolId: '', 
-        userPoolWebClientId: '',
+        // En esta etapa inicial, usamos acceso directo por credenciales
+        region: 'us-east-1', 
     },
     Storage: {
         AWSS3: {
-            bucket: 'tu-nombre-de-bucket', // El nombre exacto de tu Bucket de S3
-            region: 'us-east-1' 
+            bucket: 'propiedades-collipulli-assets', // El nombre que sugerimos
+            region: 'us-east-1' // La región sugerida
         }
     }
 };
 
-// Inicializar Amplify
+// Inicializar la librería Amplify
 Amplify.configure(awsConfig);
 
-// Función para subir el archivo
+/**
+ * Función principal para subir archivos desde el panel administrativo
+ */
 async function uploadFile() {
     const fileInput = document.getElementById('file-upload');
     const status = document.getElementById('status');
     const file = fileInput.files[0];
 
+    // Validación: Verificar si se seleccionó un archivo
     if (!file) {
-        status.innerText = "❌ Por favor, selecciona un archivo primero.";
+        status.innerText = "❌ Por favor, selecciona una foto o video primero.";
+        status.className = "mt-4 text-sm text-red-600 font-bold";
         return;
     }
 
-    status.innerText = "⏳ Subiendo archivo a Propiedades Collipulli...";
+    status.innerText = "⏳ Subiendo archivo a AWS S3...";
+    status.className = "mt-4 text-sm text-blue-600 animate-pulse";
 
     try {
-        // Esta línea hace toda la magia de la subida
+        // Ejecución de la subida a través de Amplify Storage
         const result = await Amplify.Storage.put(file.name, file, {
-            contentType: file.type, // Detecta si es imagen o video automáticamente
-            level: 'public' // Para que se pueda ver en tu web
+            contentType: file.type, 
+            level: 'public' // Permite que las fotos sean visibles en el catálogo
         });
 
-        console.log("Éxito:", result);
-        status.innerText = "✅ ¡Archivo subido con éxito! Ya está en la nube.";
+        console.log("Subida exitosa:", result);
+        
+        status.innerText = "✅ ¡Archivo subido con éxito! Listo para el catálogo.";
         status.className = "mt-4 text-sm text-green-600 font-bold";
+        
+        // Limpiar el input después de la subida
+        fileInput.value = "";
 
     } catch (error) {
-        console.error("Error detallado:", error);
-        status.innerText = "❌ Error al subir. Revisa la configuración de CORS o tus llaves.";
+        console.error("Error en la subida:", error);
+        status.innerText = "❌ Error al subir. Verifica la conexión con AWS.";
         status.className = "mt-4 text-sm text-red-600 font-bold";
     }
 }
