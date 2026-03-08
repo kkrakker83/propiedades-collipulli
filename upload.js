@@ -4,7 +4,17 @@ const PUBLIC_FOLDER = "public/";
 
 document.addEventListener("DOMContentLoaded", () => {
   const fileInput = document.getElementById("file-upload");
-  fileInput.addEventListener("change", renderPreview);
+  const precioInput = document.getElementById("precio");
+
+  if (fileInput) {
+    fileInput.addEventListener("change", renderPreview);
+  }
+
+  if (precioInput) {
+    precioInput.addEventListener("blur", () => {
+      precioInput.value = formatPrice(precioInput.value);
+    });
+  }
 });
 
 function clearCredentials() {
@@ -47,6 +57,18 @@ function sanitizeFileName(fileName) {
     .toLowerCase();
 }
 
+function formatPrice(value) {
+  if (!value) return "";
+
+  const clean = String(value).replace(/[^\d]/g, "");
+  if (!clean) return "";
+
+  const numberValue = Number(clean);
+  if (Number.isNaN(numberValue)) return value;
+
+  return "$" + numberValue.toLocaleString("es-CL");
+}
+
 function renderPreview() {
   const preview = document.getElementById("preview");
   const files = Array.from(document.getElementById("file-upload").files);
@@ -54,21 +76,33 @@ function renderPreview() {
 
   if (!files.length) return;
 
+  let firstImageMarked = false;
+
   files.forEach((file, index) => {
     const item = document.createElement("div");
     item.className = "border rounded-lg bg-white p-2 shadow-sm";
 
     const label = document.createElement("div");
     label.className = "text-xs font-bold text-gray-600 mb-2";
-    label.textContent = index === 0 ? "Archivo 1" : `Archivo ${index + 1}`;
+
+    const isImage = file.type.startsWith("image/");
+    const isVideo = file.type.startsWith("video/");
+
+    if (isImage && !firstImageMarked) {
+      label.textContent = "Portada";
+      firstImageMarked = true;
+    } else {
+      label.textContent = `Archivo ${index + 1}`;
+    }
+
     item.appendChild(label);
 
-    if (file.type.startsWith("image/")) {
+    if (isImage) {
       const img = document.createElement("img");
       img.src = URL.createObjectURL(file);
       img.className = "w-full h-28 object-cover rounded";
       item.appendChild(img);
-    } else if (file.type.startsWith("video/")) {
+    } else if (isVideo) {
       const videoBox = document.createElement("div");
       videoBox.className = "w-full h-28 rounded bg-gray-900 text-white flex items-center justify-center text-xs text-center p-2";
       videoBox.textContent = "Video seleccionado";
@@ -130,7 +164,6 @@ function uploadSingleFile(s3, file, key, onProgress) {
       Key: key,
       Body: file,
       ContentType: file.type
-      // ACL: "public-read"
     };
 
     const uploader = s3.upload(params);
@@ -152,26 +185,14 @@ function uploadSingleFile(s3, file, key, onProgress) {
   });
 }
 
-function getNextIdFromCurrentJson() {
-  const textarea = document.getElementById("json-output").value.trim();
-
-  try {
-    const parsed = JSON.parse(textarea);
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      const maxId = Math.max(...parsed.map(item => Number(item.id) || 0));
-      return maxId + 1;
-    }
-  } catch (e) {}
-
-  return null;
-}
-
 async function uploadFiles() {
   const titulo = document.getElementById("titulo").value.trim();
-  const precio = document.getElementById("precio").value.trim();
+  const precioRaw = document.getElementById("precio").value.trim();
+  const precio = formatPrice(precioRaw);
   const ubicacion = document.getElementById("ubicacion").value.trim();
   const dormitorios = parseInt(document.getElementById("dormitorios").value, 10);
   const banos = parseInt(document.getElementById("banos").value, 10);
+  const descripcion = document.getElementById("descripcion").value.trim();
   const disponible = document.getElementById("disponible").value === "true";
   const fileInput = document.getElementById("file-upload");
   const files = Array.from(fileInput.files);
@@ -191,6 +212,11 @@ async function uploadFiles() {
     return;
   }
 
+  if (!descripcion) {
+    setStatus("❌ Debes ingresar una descripción.", "error");
+    return;
+  }
+
   if (!files.length) {
     setStatus("❌ Debes seleccionar al menos una foto o video.", "error");
     return;
@@ -203,7 +229,7 @@ async function uploadFiles() {
   }
 
   const s3 = createS3Client(credentials);
-  const uploadedUrls = [];
+  const uploadedFiles = [];
   const baseStamp = Date.now();
 
   uploadBtn.disabled = true;
@@ -229,7 +255,7 @@ async function uploadFiles() {
         }
       );
 
-      uploadedUrls.push({
+      uploadedFiles.push({
         url: result.Location,
         tipo: file.type.startsWith("video/") ? "video" : "imagen",
         nombre: file.name
@@ -238,8 +264,15 @@ async function uploadFiles() {
 
     updateProgress(100);
 
-    const firstImage = uploadedUrls.find((item) => item.tipo === "imagen");
-    const portada = firstImage ? firstImage.url : uploadedUrls[0].url;
+    const imagenes = uploadedFiles
+      .filter((item) => item.tipo === "imagen")
+      .map((item) => item.url);
+
+    const videos = uploadedFiles
+      .filter((item) => item.tipo === "video")
+      .map((item) => item.url);
+
+    const portada = imagenes.length > 0 ? imagenes[0] : (uploadedFiles[0]?.url || "");
 
     const propertyJson = {
       id: baseStamp,
@@ -249,18 +282,22 @@ async function uploadFiles() {
       dormitorios: dormitorios,
       banos: banos,
       imagenUrl: portada,
+      galeria: imagenes,
+      videos: videos,
+      descripcion: descripcion,
       disponible: disponible
     };
 
     jsonOutput.value = JSON.stringify(propertyJson, null, 2);
 
-    setStatus("✅ Propiedad subida correctamente. JSON compatible generado.", "success");
+    setStatus("✅ Propiedad subida correctamente. JSON completo generado.", "success");
 
     document.getElementById("titulo").value = "";
     document.getElementById("precio").value = "";
     document.getElementById("ubicacion").value = "";
     document.getElementById("dormitorios").value = "";
     document.getElementById("banos").value = "";
+    document.getElementById("descripcion").value = "";
     document.getElementById("disponible").value = "true";
     fileInput.value = "";
     document.getElementById("preview").innerHTML = "";
