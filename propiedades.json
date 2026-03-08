@@ -15,8 +15,32 @@
     "precio": "$230.000.000",
     "ubicacion": "A 10 km de Collipulli - Sector Victoria Unida",
     "dormitorios": 3,
-    "banos": 0,
+    "banos": 2,
     "imagenUrl": "https://propiedades-collipulli-assets.s3.amazonaws.com/public/1772929355567_1_whatsapp-image-2026-02-24-at-10.16.40-pm.jpeg",
+    "disponible": true
+  },
+  {
+    "id": 1772938817428,
+    "titulo": "Tu Refugio Perfecto en Victoria Unida: Parcela con Piscina y Autonomía Hídrica",
+    "precio": "$230.000.000",
+    "ubicacion": "A 10 km de Collipulli - Sector Victoria Unida",
+    "dormitorios": 3,
+    "banos": 2,
+    "imagenUrl": "https://propiedades-collipulli-assets.s3.amazonaws.com/public/1772938817428_1_whatsapp-image-2026-02-24-at-10.16.38-pm.jpeg",
+    "galeria": [
+      "https://propiedades-collipulli-assets.s3.amazonaws.com/public/1772938817428_1_whatsapp-image-2026-02-24-at-10.16.38-pm.jpeg",
+      "https://propiedades-collipulli-assets.s3.amazonaws.com/public/1772938817428_2_whatsapp-image-2026-02-24-at-10.16.39-pm.jpeg",
+      "https://propiedades-collipulli-assets.s3.amazonaws.com/public/1772938817428_3_whatsapp-image-2026-02-24-at-10.16.40-pm-1.jpeg",
+      "https://propiedades-collipulli-assets.s3.amazonaws.com/public/1772938817428_4_whatsapp-image-2026-02-24-at-10.16.40-pm.jpeg",
+      "https://propiedades-collipulli-assets.s3.amazonaws.com/public/1772938817428_5_whatsapp-image-2026-02-24-at-10.16.41-pm.jpeg",
+      "https://propiedades-collipulli-assets.s3.amazonaws.com/public/1772938817428_6_whatsapp-image-2026-02-24-at-10.16.42-pm.jpeg",
+      "https://propiedades-collipulli-assets.s3.amazonaws.com/public/1772938817428_7_whatsapp-image-2026-02-24-at-10.16.43-pm.jpeg",
+      "https://propiedades-collipulli-assets.s3.amazonaws.com/public/1772938817428_8_whatsapp-image-2026-02-24-at-10.16.44-pm-1.jpeg",
+      "https://propiedades-collipulli-assets.s3.amazonaws.com/public/1772938817428_9_whatsapp-image-2026-02-24-at-10.16.44-pm.jpeg",
+      "https://propiedades-collipulli-assets.s3.amazonaws.com/public/1772938817428_10_whatsapp-image-2026-02-24-at-10.16.45-pm.jpeg"
+    ],
+    "videos": [],
+    "descripcion": "Tu Refugio Perfecto en Victoria Unida: Parcela con Piscina y Autonomía Hídrica\n\n¿Buscas tranquilidad sin perder conectividad? Descubre esta hermosa parcela de 5.000 m² ubicada en el Km 10 camino a San Andrés, sector Victoria Unida. Un espacio diseñado para disfrutar la naturaleza con todas las comodidades.\n\nComodidad Interior: Casa de 3 dormitorios y 2 baños, con un amplio living-comedor, cocina funcional y una terraza ideal para los atardeceres.\n\nAgua Asegurada: Cuenta con un sistema robusto de 2 pozos/norias, estanques de acopio y bombas periféricas, garantizando suministro constante.\n\nDiversión y Relax: Gran piscina equipada con sistema de correas para elevar la temperatura, rodeada de jardines formados y árboles ornamentales.\n\nProductividad y Espacio: Incluye árboles frutales en producción, 2 bodegas, leñera y estacionamiento techado.\n\n¡Ven a conocer el lugar donde tu familia merece crecer!",
     "disponible": true
   }
 ]
