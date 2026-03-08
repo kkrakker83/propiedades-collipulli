@@ -7,11 +7,28 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/aws-sdk/2.1226.0/aws-sdk.min.js"></script>
 </head>
-<body class="bg-gray-100 p-4 md:p-8">
-  <div class="max-w-3xl mx-auto bg-white p-6 rounded-2xl shadow-xl">
-    <h1 class="text-2xl md:text-3xl font-bold mb-6 text-blue-900 text-center">
-      Panel de Administración - Propiedades Collipulli
-    </h1>
+<body class="bg-gray-100 min-h-screen p-4 md:p-8">
+
+  <div class="max-w-5xl mx-auto bg-white p-6 md:p-8 rounded-2xl shadow-xl">
+    <div class="mb-8 text-center">
+      <h1 class="text-2xl md:text-3xl font-bold text-blue-900">
+        Panel de Administración - Propiedades Collipulli
+      </h1>
+      <p class="text-gray-500 mt-2 text-sm md:text-base">
+        Carga propiedades con fotos, videos y descripción para generar el JSON listo para publicar.
+      </p>
+    </div>
+
+    <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6">
+      <h2 class="font-bold text-blue-900 mb-2">Flujo de trabajo</h2>
+      <p class="text-sm text-gray-700 leading-6">
+        1. Completa los datos de la propiedad.<br>
+        2. Selecciona fotos y/o videos.<br>
+        3. Sube a S3.<br>
+        4. Copia el JSON generado.<br>
+        5. Pégalo dentro de <span class="font-mono text-xs bg-white px-2 py-1 rounded">propiedades.json</span>.
+      </p>
+    </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
       <div>
@@ -32,6 +49,9 @@
           placeholder="Ej: $75.000.000"
           class="block w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
         />
+        <p class="text-xs text-gray-500 mt-1">
+          Puedes escribirlo ya formateado. Luego automatizaremos este campo.
+        </p>
       </div>
     </div>
 
@@ -81,6 +101,19 @@
     </div>
 
     <div class="mb-6">
+      <label for="descripcion" class="block text-gray-700 font-semibold mb-2">Descripción</label>
+      <textarea
+        id="descripcion"
+        rows="6"
+        placeholder="Ej: Hermosa casa ubicada a 10 km de Collipulli, sector Victoria Unida. Cuenta con amplio terreno, buena conectividad y entorno tranquilo..."
+        class="block w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none resize-y"
+      ></textarea>
+      <p class="text-xs text-gray-500 mt-1">
+        Esta descripción se usará en la ficha individual de la propiedad.
+      </p>
+    </div>
+
+    <div class="mb-6">
       <label for="file-upload" class="block text-gray-700 font-semibold mb-2">
         Fotos y videos
       </label>
@@ -91,9 +124,11 @@
         accept="image/*,video/*"
         class="block w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
       />
-      <p class="text-sm text-gray-500 mt-2">
-        Puedes seleccionar múltiples archivos. La primera imagen encontrada será la portada (`imagenUrl`).
-      </p>
+      <div class="mt-2 text-sm text-gray-500 leading-6">
+        <p>• Puedes seleccionar múltiples archivos a la vez.</p>
+        <p>• La primera imagen encontrada se usará como portada (<span class="font-mono text-xs">imagenUrl</span>).</p>
+        <p>• Más adelante el sistema generará también <span class="font-mono text-xs">galeria</span> y <span class="font-mono text-xs">videos</span>.</p>
+      </div>
     </div>
 
     <div class="flex flex-col md:flex-row gap-3 mb-4">
@@ -106,6 +141,7 @@
       </button>
 
       <button
+        type="button"
         onclick="clearCredentials()"
         class="bg-gray-200 text-gray-800 px-6 py-3 rounded-lg hover:bg-gray-300 w-full font-bold transition-all"
       >
@@ -113,7 +149,7 @@
       </button>
     </div>
 
-    <div class="mb-4">
+    <div class="mb-6">
       <p id="status" class="text-sm font-medium min-h-[24px]"></p>
       <div class="w-full bg-gray-200 rounded-full h-4 mt-3 overflow-hidden">
         <div
@@ -126,17 +162,21 @@
       </div>
     </div>
 
-    <div class="mb-4">
+    <div class="mb-6">
       <h2 class="text-lg font-bold text-gray-800 mb-2">Vista previa de archivos seleccionados</h2>
-      <div id="preview" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+      <div
+        id="preview"
+        class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3"
+      ></div>
     </div>
 
     <hr class="my-6 border-gray-200" />
 
     <div>
-      <div class="flex items-center justify-between mb-2">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-2">
         <h2 class="text-lg font-bold text-gray-800">JSON generado</h2>
         <button
+          type="button"
           onclick="copyJson()"
           class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-semibold"
         >
@@ -146,10 +186,15 @@
 
       <textarea
         id="json-output"
-        rows="14"
+        rows="16"
         class="w-full border border-gray-300 rounded-lg p-3 bg-gray-50 font-mono text-sm outline-none focus:ring-2 focus:ring-green-500"
         placeholder="Aquí aparecerá el JSON generado..."
       ></textarea>
+
+      <p class="text-xs text-gray-500 mt-2 leading-5">
+        Revisa el JSON antes de pegarlo en <span class="font-mono text-xs">propiedades.json</span>.  
+        En el siguiente paso mejoraremos <span class="font-mono text-xs">upload.js</span> para incluir descripción, galería y videos automáticamente.
+      </p>
     </div>
   </div>
 
