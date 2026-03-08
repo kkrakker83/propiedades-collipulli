@@ -215,10 +215,10 @@
           return;
         }
 
-        const response = await fetch("./propiedades.json?v=" + Date.now());
+        const response = await fetch("https://propiedades-collipulli-assets.s3.amazonaws.com/data/propiedades.json?v=" + Date.now());
 
         if (!response.ok) {
-          throw new Error("No se pudo cargar propiedades.json");
+          throw new Error("No se pudo cargar propiedades.json desde S3");
         }
 
         const propiedades = await response.json();
