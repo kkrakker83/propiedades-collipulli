@@ -8,5 +8,15 @@
     "banos": 2,
     "imagenUrl": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80",
     "disponible": true
-  }
+  },
+  {
+  "id": 1772929355567,
+  "titulo": "Casa en Collipulli",
+  "precio": "230000000",
+  "ubicacion": "a 10 kl de Collipulli- Sector Victoria Unida",
+  "dormitorios": 3,
+  "banos": 0,
+  "imagenUrl": "https://propiedades-collipulli-assets.s3.amazonaws.com/public/1772929355567_1_whatsapp-image-2026-02-24-at-10.16.40-pm.jpeg",
+  "disponible": true
+}
 ]
