@@ -30,6 +30,7 @@
   <script>
     const propertyDetail = document.getElementById("property-detail");
     const whatsappNumero = "56951051271";
+    const fallbackImage = "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80";
 
     function getQueryParam(name) {
       const params = new URLSearchParams(window.location.search);
@@ -37,16 +38,26 @@
     }
 
     function formatDescription(texto) {
-      if (!texto) {
+      if (!texto || !texto.trim()) {
         return "Propiedad disponible para mayor información vía WhatsApp.";
       }
       return texto.replace(/\n/g, "<br>");
     }
 
+    function getMainImage(propiedad) {
+      if (propiedad.imagenUrl && propiedad.imagenUrl !== "AQUÍ_IRÁ_LA_URL_DE_TU_FOTO_EN_S3") {
+        return propiedad.imagenUrl;
+      }
+
+      if (Array.isArray(propiedad.galeria) && propiedad.galeria.length > 0) {
+        return propiedad.galeria[0];
+      }
+
+      return fallbackImage;
+    }
+
     function renderGallery(propiedad) {
-      const imagenPrincipal = propiedad.imagenUrl && propiedad.imagenUrl !== "AQUÍ_IRÁ_LA_URL_DE_TU_FOTO_EN_S3"
-        ? propiedad.imagenUrl
-        : "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80";
+      const imagenPrincipal = getMainImage(propiedad);
 
       const galeria = Array.isArray(propiedad.galeria) && propiedad.galeria.length > 0
         ? propiedad.galeria
@@ -58,7 +69,7 @@
             <img
               id="main-image"
               src="${imagenPrincipal}"
-              alt="${propiedad.titulo}"
+              alt="${propiedad.titulo || "Propiedad"}"
               class="w-full h-[420px] object-cover rounded-2xl shadow-md bg-white"
             />
           </div>
@@ -82,6 +93,31 @@
       `;
     }
 
+    function renderVideos(propiedad) {
+      if (!Array.isArray(propiedad.videos) || propiedad.videos.length === 0) {
+        return "";
+      }
+
+      return `
+        <div class="border-t pt-6 mt-6">
+          <h2 class="text-2xl font-bold text-gray-800 mb-4">Videos</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            ${propiedad.videos.map((videoUrl, index) => `
+              <div class="bg-black rounded-2xl overflow-hidden shadow-md">
+                <video controls class="w-full h-72 bg-black">
+                  <source src="${videoUrl}" type="video/mp4">
+                  Tu navegador no soporta la reproducción de video.
+                </video>
+                <div class="p-3 bg-white text-sm text-gray-600">
+                  Video ${index + 1}
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      `;
+    }
+
     function changeMainImage(url) {
       const mainImage = document.getElementById("main-image");
       if (mainImage) {
@@ -95,11 +131,11 @@
         : `<span class="inline-block text-sm font-bold bg-red-500 text-white px-4 py-2 rounded-full shadow">NO DISPONIBLE</span>`;
 
       const mensaje = encodeURIComponent(
-        `Hola, me interesa la propiedad "${propiedad.titulo}" ubicada en ${propiedad.ubicacion}.`
+        `Hola, me interesa la propiedad "${propiedad.titulo || "Sin título"}" ubicada en ${propiedad.ubicacion || "sin ubicación indicada"}.`
       );
       const whatsappLink = `https://wa.me/${whatsappNumero}?text=${mensaje}`;
 
-      document.title = `${propiedad.titulo} | Propiedades Collipulli`;
+      document.title = `${propiedad.titulo || "Detalle de Propiedad"} | Propiedades Collipulli`;
 
       propertyDetail.innerHTML = `
         <div class="bg-white rounded-3xl shadow-xl p-4 md:p-8">
@@ -112,35 +148,37 @@
               <div class="mb-4">${disponible}</div>
 
               <h1 class="text-3xl md:text-4xl font-black text-blue-900 mb-2">
-                ${propiedad.titulo ?? "Sin título"}
+                ${propiedad.titulo || "Sin título"}
               </h1>
 
               <p class="text-gray-500 text-lg mb-4">
-                ${propiedad.ubicacion ?? "Ubicación no informada"}
+                ${propiedad.ubicacion || "Ubicación no informada"}
               </p>
 
               <div class="flex flex-wrap gap-3 mb-6">
                 <div class="bg-gray-100 px-4 py-3 rounded-xl font-semibold text-gray-700">
-                  🛏️ ${propiedad.dormitorios ?? 0} Dormitorios
+                  🛏️ ${propiedad.dormitorios || 0} Dormitorios
                 </div>
                 <div class="bg-gray-100 px-4 py-3 rounded-xl font-semibold text-gray-700">
-                  🚿 ${propiedad.banos ?? 0} Baños
+                  🚿 ${propiedad.banos || 0} Baños
                 </div>
               </div>
 
               <div class="border-t pt-6">
                 <h2 class="text-2xl font-bold text-gray-800 mb-3">Descripción</h2>
                 <p class="text-gray-700 leading-7">
-                  ${formatDescription(propiedad.descripcion)}
+                  ${formatDescription(propiedad.descripcion || "")}
                 </p>
               </div>
+
+              ${renderVideos(propiedad)}
             </div>
 
             <div>
               <div class="bg-gray-50 rounded-2xl p-6 shadow-sm border sticky top-24">
                 <p class="text-sm text-gray-500 mb-2">Precio</p>
                 <p class="text-3xl font-black text-blue-900 mb-6">
-                  ${propiedad.precio ?? "Consultar"}
+                  ${propiedad.precio || "Consultar"}
                 </p>
 
                 <a
@@ -177,7 +215,8 @@
           return;
         }
 
-        const response = await fetch("./propiedades.json");
+        const response = await fetch("./propiedades.json?v=" + Date.now());
+
         if (!response.ok) {
           throw new Error("No se pudo cargar propiedades.json");
         }
