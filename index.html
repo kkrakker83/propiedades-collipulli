@@ -133,6 +133,8 @@
         }
 
         const propiedades = await response.json();
+        console.log("Propiedades cargadas:", propiedades);
+        alert("Cantidad de propiedades cargadas: " + propiedades.length);
 
         if (!Array.isArray(propiedades) || propiedades.length === 0) {
           propiedadesContainer.innerHTML = `
