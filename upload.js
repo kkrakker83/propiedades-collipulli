@@ -1,6 +1,8 @@
 const BUCKET_NAME = "propiedades-collipulli-assets";
 const REGION = "us-east-1";
 const PUBLIC_FOLDER = "public/";
+const DATA_FILE_KEY = "data/propiedades.json";
+const DATA_FILE_URL = `https://${BUCKET_NAME}.s3.amazonaws.com/${DATA_FILE_KEY}`;
 
 document.addEventListener("DOMContentLoaded", () => {
   const fileInput = document.getElementById("file-upload");
@@ -185,6 +187,41 @@ function uploadSingleFile(s3, file, key, onProgress) {
   });
 }
 
+async function fetchExistingProperties() {
+  const response = await fetch(`${DATA_FILE_URL}?v=${Date.now()}`);
+
+  if (!response.ok) {
+    throw new Error("No se pudo leer data/propiedades.json desde S3");
+  }
+
+  const data = await response.json();
+
+  if (!Array.isArray(data)) {
+    throw new Error("El archivo data/propiedades.json no contiene un array válido");
+  }
+
+  return data;
+}
+
+function savePropertiesToS3(s3, properties) {
+  return new Promise((resolve, reject) => {
+    const params = {
+      Bucket: BUCKET_NAME,
+      Key: DATA_FILE_KEY,
+      Body: JSON.stringify(properties, null, 2),
+      ContentType: "application/json; charset=utf-8"
+    };
+
+    s3.putObject(params, (err, data) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(data);
+      }
+    });
+  });
+}
+
 async function uploadFiles() {
   const titulo = document.getElementById("titulo").value.trim();
   const precioRaw = document.getElementById("precio").value.trim();
@@ -262,7 +299,9 @@ async function uploadFiles() {
       });
     }
 
-    updateProgress(100);
+    setStatus("⏳ Leyendo propiedades actuales desde S3...", "info");
+
+    const existingProperties = await fetchExistingProperties();
 
     const imagenes = uploadedFiles
       .filter((item) => item.tipo === "imagen")
@@ -288,9 +327,16 @@ async function uploadFiles() {
       disponible: disponible
     };
 
+    const updatedProperties = [...existingProperties, propertyJson];
+
+    setStatus("⏳ Guardando propiedades actualizadas en S3...", "info");
+
+    await savePropertiesToS3(s3, updatedProperties);
+
+    updateProgress(100);
     jsonOutput.value = JSON.stringify(propertyJson, null, 2);
 
-    setStatus("✅ Propiedad subida correctamente. JSON completo generado.", "success");
+    setStatus("✅ Propiedad guardada automáticamente en S3 y JSON generado.", "success");
 
     document.getElementById("titulo").value = "";
     document.getElementById("precio").value = "";
@@ -315,7 +361,12 @@ async function uploadFiles() {
       return;
     }
 
-    setStatus(`❌ Error al subir archivos: ${err.message || "desconocido"}`, "error");
+    if (err.code === "AccessDenied") {
+      setStatus("❌ AccessDenied: faltan permisos AWS para leer o escribir data/propiedades.json.", "error");
+      return;
+    }
+
+    setStatus(`❌ Error al guardar en S3: ${err.message || "desconocido"}`, "error");
   } finally {
     uploadBtn.disabled = false;
     uploadBtn.classList.remove("opacity-60", "cursor-not-allowed");
