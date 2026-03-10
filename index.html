@@ -68,7 +68,7 @@
         ? propiedad.imagenUrl
         : "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=600&q=80";
 
-      const whatsappNumero = "56989296908";
+      const whatsappNumero = "56951051271";
       const mensaje = encodeURIComponent(
         `Hola, me interesa la propiedad: ${propiedad.titulo} en ${propiedad.ubicacion}.`
       );
@@ -133,8 +133,6 @@
         }
 
         const propiedades = await response.json();
-        console.log("Propiedades cargadas:", propiedades);
-        alert("Cantidad de propiedades cargadas: " + propiedades.length);
 
         if (!Array.isArray(propiedades) || propiedades.length === 0) {
           propiedadesContainer.innerHTML = `
