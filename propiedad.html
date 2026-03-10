@@ -56,6 +56,33 @@
       return fallbackImage;
     }
 
+    function getEstadoPropiedad(propiedad) {
+      if (propiedad.estado) {
+        return String(propiedad.estado).toLowerCase();
+      }
+
+      // Compatibilidad con propiedades antiguas
+      if (typeof propiedad.disponible === "boolean") {
+        return propiedad.disponible ? "disponible" : "vendida";
+      }
+
+      return "disponible";
+    }
+
+    function getEstadoBadge(propiedad) {
+      const estado = getEstadoPropiedad(propiedad);
+
+      if (estado === "reservada") {
+        return `<span class="inline-block text-sm font-bold bg-yellow-500 text-white px-4 py-2 rounded-full shadow">RESERVADA</span>`;
+      }
+
+      if (estado === "vendida") {
+        return `<span class="inline-block text-sm font-bold bg-red-500 text-white px-4 py-2 rounded-full shadow">VENDIDA</span>`;
+      }
+
+      return `<span class="inline-block text-sm font-bold bg-green-500 text-white px-4 py-2 rounded-full shadow">DISPONIBLE</span>`;
+    }
+
     function renderGallery(propiedad) {
       const imagenPrincipal = getMainImage(propiedad);
 
@@ -126,9 +153,7 @@
     }
 
     function renderProperty(propiedad) {
-      const disponible = propiedad.disponible
-        ? `<span class="inline-block text-sm font-bold bg-green-500 text-white px-4 py-2 rounded-full shadow">DISPONIBLE</span>`
-        : `<span class="inline-block text-sm font-bold bg-red-500 text-white px-4 py-2 rounded-full shadow">NO DISPONIBLE</span>`;
+      const estadoBadge = getEstadoBadge(propiedad);
 
       const mensaje = encodeURIComponent(
         `Hola, me interesa la propiedad "${propiedad.titulo || "Sin título"}" ubicada en ${propiedad.ubicacion || "sin ubicación indicada"}.`
@@ -145,7 +170,7 @@
 
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="lg:col-span-2">
-              <div class="mb-4">${disponible}</div>
+              <div class="mb-4">${estadoBadge}</div>
 
               <h1 class="text-3xl md:text-4xl font-black text-blue-900 mb-2">
                 ${propiedad.titulo || "Sin título"}
