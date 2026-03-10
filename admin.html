@@ -15,7 +15,7 @@
         Panel de Administración - Propiedades Collipulli
       </h1>
       <p class="text-gray-500 mt-2 text-sm md:text-base">
-        Carga propiedades con fotos, videos y descripción para generar el JSON listo para publicar.
+        Carga propiedades con fotos, videos, descripción y estado para guardarlas automáticamente en S3.
       </p>
     </div>
 
@@ -24,9 +24,9 @@
       <p class="text-sm text-gray-700 leading-6">
         1. Completa los datos de la propiedad.<br>
         2. Selecciona fotos y/o videos.<br>
-        3. Sube a S3.<br>
-        4. Copia el JSON generado.<br>
-        5. Pégalo dentro de <span class="font-mono text-xs bg-white px-2 py-1 rounded">propiedades.json</span>.
+        3. Elige el estado de publicación.<br>
+        4. Sube a S3.<br>
+        5. La propiedad quedará guardada automáticamente en el sistema.
       </p>
     </div>
 
@@ -50,7 +50,7 @@
           class="block w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
         />
         <p class="text-xs text-gray-500 mt-1">
-          Puedes escribirlo ya formateado. Luego automatizaremos este campo.
+          Puedes escribir el valor sin puntos y el sistema lo formateará.
         </p>
       </div>
     </div>
@@ -89,13 +89,14 @@
       </div>
 
       <div>
-        <label for="disponible" class="block text-gray-700 font-semibold mb-2">Disponible</label>
+        <label for="estado" class="block text-gray-700 font-semibold mb-2">Estado</label>
         <select
-          id="disponible"
+          id="estado"
           class="block w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
         >
-          <option value="true">Sí</option>
-          <option value="false">No</option>
+          <option value="disponible">Disponible</option>
+          <option value="reservada">Reservada</option>
+          <option value="vendida">Vendida</option>
         </select>
       </div>
     </div>
@@ -109,7 +110,7 @@
         class="block w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none resize-y"
       ></textarea>
       <p class="text-xs text-gray-500 mt-1">
-        Esta descripción se usará en la ficha individual de la propiedad.
+        Esta descripción se mostrará en la ficha individual de la propiedad.
       </p>
     </div>
 
@@ -127,7 +128,7 @@
       <div class="mt-2 text-sm text-gray-500 leading-6">
         <p>• Puedes seleccionar múltiples archivos a la vez.</p>
         <p>• La primera imagen encontrada se usará como portada (<span class="font-mono text-xs">imagenUrl</span>).</p>
-        <p>• Más adelante el sistema generará también <span class="font-mono text-xs">galeria</span> y <span class="font-mono text-xs">videos</span>.</p>
+        <p>• El sistema guardará automáticamente <span class="font-mono text-xs">galeria</span>, <span class="font-mono text-xs">videos</span> y <span class="font-mono text-xs">estado</span>.</p>
       </div>
     </div>
 
@@ -137,7 +138,7 @@
         onclick="uploadFiles()"
         class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 w-full font-bold transition-all shadow-lg active:scale-95"
       >
-        Subir propiedad a S3
+        Guardar propiedad en S3
       </button>
 
       <button
@@ -192,8 +193,7 @@
       ></textarea>
 
       <p class="text-xs text-gray-500 mt-2 leading-5">
-        Revisa el JSON antes de pegarlo en <span class="font-mono text-xs">propiedades.json</span>.  
-        En el siguiente paso mejoraremos <span class="font-mono text-xs">upload.js</span> para incluir descripción, galería y videos automáticamente.
+        Este JSON es solo informativo. La propiedad ya habrá quedado guardada automáticamente en S3 al finalizar correctamente.
       </p>
     </div>
   </div>
