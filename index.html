@@ -56,11 +56,31 @@
   <script>
     const propiedadesContainer = document.getElementById("propiedades-container");
 
-    function getEstadoBadge(disponible) {
-      if (disponible) {
-        return `<span class="text-xs font-bold bg-green-500 text-white px-3 py-1 rounded-full shadow-lg">DISPONIBLE</span>`;
+    function getEstadoPropiedad(propiedad) {
+      if (propiedad.estado) {
+        return String(propiedad.estado).toLowerCase();
       }
-      return `<span class="text-xs font-bold bg-red-500 text-white px-3 py-1 rounded-full shadow-lg">NO DISPONIBLE</span>`;
+
+      // Compatibilidad con propiedades antiguas
+      if (typeof propiedad.disponible === "boolean") {
+        return propiedad.disponible ? "disponible" : "vendida";
+      }
+
+      return "disponible";
+    }
+
+    function getEstadoBadge(propiedad) {
+      const estado = getEstadoPropiedad(propiedad);
+
+      if (estado === "reservada") {
+        return `<span class="text-xs font-bold bg-yellow-500 text-white px-3 py-1 rounded-full shadow-lg">RESERVADA</span>`;
+      }
+
+      if (estado === "vendida") {
+        return `<span class="text-xs font-bold bg-red-500 text-white px-3 py-1 rounded-full shadow-lg">VENDIDA</span>`;
+      }
+
+      return `<span class="text-xs font-bold bg-green-500 text-white px-3 py-1 rounded-full shadow-lg">DISPONIBLE</span>`;
     }
 
     function crearCard(propiedad) {
@@ -84,7 +104,7 @@
           <div class="relative">
             <img src="${imagen}" alt="${propiedad.titulo}" class="w-full h-56 object-cover group-hover:scale-105 transition duration-500">
             <div class="absolute top-3 left-3">
-              ${getEstadoBadge(propiedad.disponible)}
+              ${getEstadoBadge(propiedad)}
             </div>
           </div>
 
