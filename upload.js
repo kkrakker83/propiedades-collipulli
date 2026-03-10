@@ -230,7 +230,8 @@ async function uploadFiles() {
   const dormitorios = parseInt(document.getElementById("dormitorios").value, 10);
   const banos = parseInt(document.getElementById("banos").value, 10);
   const descripcion = document.getElementById("descripcion").value.trim();
-  const disponible = document.getElementById("disponible").value === "true";
+  const estado = document.getElementById("estado").value;
+
   const fileInput = document.getElementById("file-upload");
   const files = Array.from(fileInput.files);
   const uploadBtn = document.getElementById("upload-btn");
@@ -251,6 +252,11 @@ async function uploadFiles() {
 
   if (!descripcion) {
     setStatus("❌ Debes ingresar una descripción.", "error");
+    return;
+  }
+
+  if (!estado) {
+    setStatus("❌ Debes seleccionar un estado.", "error");
     return;
   }
 
@@ -324,7 +330,7 @@ async function uploadFiles() {
       galeria: imagenes,
       videos: videos,
       descripcion: descripcion,
-      disponible: disponible
+      estado: estado
     };
 
     const updatedProperties = [...existingProperties, propertyJson];
@@ -344,7 +350,7 @@ async function uploadFiles() {
     document.getElementById("dormitorios").value = "";
     document.getElementById("banos").value = "";
     document.getElementById("descripcion").value = "";
-    document.getElementById("disponible").value = "true";
+    document.getElementById("estado").value = "disponible";
     fileInput.value = "";
     document.getElementById("preview").innerHTML = "";
   } catch (err) {
