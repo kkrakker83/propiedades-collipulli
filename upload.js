@@ -4,6 +4,9 @@ const PUBLIC_FOLDER = "public/";
 const DATA_FILE_KEY = "data/propiedades.json";
 const DATA_FILE_URL = `https://${BUCKET_NAME}.s3.amazonaws.com/${DATA_FILE_KEY}`;
 
+let currentProperties = [];
+let currentEditingProperty = null;
+
 document.addEventListener("DOMContentLoaded", () => {
   const fileInput = document.getElementById("file-upload");
   const precioInput = document.getElementById("precio");
@@ -17,6 +20,8 @@ document.addEventListener("DOMContentLoaded", () => {
       precioInput.value = formatPrice(precioInput.value);
     });
   }
+
+  loadPropertiesList();
 });
 
 function clearCredentials() {
@@ -69,6 +74,18 @@ function formatPrice(value) {
   if (Number.isNaN(numberValue)) return value;
 
   return "$" + numberValue.toLocaleString("es-CL");
+}
+
+function getEstadoBadgeClass(estado) {
+  if (estado === "reservada") return "bg-yellow-500 text-white";
+  if (estado === "vendida") return "bg-red-500 text-white";
+  return "bg-green-500 text-white";
+}
+
+function getEstadoLabel(estado) {
+  if (estado === "reservada") return "RESERVADA";
+  if (estado === "vendida") return "VENDIDA";
+  return "DISPONIBLE";
 }
 
 function renderPreview() {
@@ -222,7 +239,258 @@ function savePropertiesToS3(s3, properties) {
   });
 }
 
+function enterEditMode(propiedadId) {
+  const property = currentProperties.find((item) => String(item.id) === String(propiedadId));
+  if (!property) {
+    alert("No se encontró la propiedad a editar.");
+    return;
+  }
+
+  currentEditingProperty = { ...property };
+
+  document.getElementById("editing-id").value = property.id;
+  document.getElementById("titulo").value = property.titulo || "";
+  document.getElementById("precio").value = property.precio || "";
+  document.getElementById("ubicacion").value = property.ubicacion || "";
+  document.getElementById("dormitorios").value = property.dormitorios ?? "";
+  document.getElementById("banos").value = property.banos ?? "";
+  document.getElementById("descripcion").value = property.descripcion || "";
+  document.getElementById("estado").value = property.estado || "disponible";
+
+  document.getElementById("upload-btn").textContent = "Actualizar propiedad en S3";
+  document.getElementById("cancel-edit-btn").classList.remove("hidden");
+  document.getElementById("edit-mode-banner").classList.remove("hidden");
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function cancelEditMode() {
+  currentEditingProperty = null;
+
+  document.getElementById("editing-id").value = "";
+  document.getElementById("titulo").value = "";
+  document.getElementById("precio").value = "";
+  document.getElementById("ubicacion").value = "";
+  document.getElementById("dormitorios").value = "";
+  document.getElementById("banos").value = "";
+  document.getElementById("descripcion").value = "";
+  document.getElementById("estado").value = "disponible";
+  document.getElementById("file-upload").value = "";
+  document.getElementById("preview").innerHTML = "";
+  document.getElementById("upload-btn").textContent = "Guardar propiedad en S3";
+  document.getElementById("cancel-edit-btn").classList.add("hidden");
+  document.getElementById("edit-mode-banner").classList.add("hidden");
+}
+
+function renderPropertiesList(properties) {
+  const list = document.getElementById("properties-list");
+  if (!list) return;
+
+  if (!Array.isArray(properties) || properties.length === 0) {
+    list.innerHTML = `
+      <div class="text-gray-500 text-sm bg-gray-50 border border-gray-200 rounded-xl p-4">
+        No hay propiedades guardadas todavía.
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = properties
+    .slice()
+    .reverse()
+    .map((propiedad) => {
+      const estado = propiedad.estado || (propiedad.disponible ? "disponible" : "vendida");
+      const badgeClass = getEstadoBadgeClass(estado);
+      const badgeLabel = getEstadoLabel(estado);
+      const thumb = propiedad.imagenUrl || "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=300&q=80";
+
+      return `
+        <div class="border border-gray-200 rounded-2xl bg-white shadow-sm p-4">
+          <div class="flex flex-col md:flex-row gap-4">
+            <div class="md:w-40 shrink-0">
+              <img
+                src="${thumb}"
+                alt="${propiedad.titulo || "Propiedad"}"
+                class="w-full h-28 object-cover rounded-xl"
+              />
+            </div>
+
+            <div class="flex-1">
+              <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                <div>
+                  <h3 class="text-lg font-bold text-blue-900">
+                    ${propiedad.titulo || "Sin título"}
+                  </h3>
+                  <p class="text-sm text-gray-500 mt-1">
+                    ${propiedad.ubicacion || "Ubicación no informada"}
+                  </p>
+                </div>
+
+                <span class="inline-block text-xs font-bold px-3 py-1 rounded-full shadow ${badgeClass}">
+                  ${badgeLabel}
+                </span>
+              </div>
+
+              <div class="mt-3 flex flex-wrap gap-3 text-sm text-gray-700">
+                <span class="bg-gray-100 px-3 py-1 rounded-lg">Precio: ${propiedad.precio || "Consultar"}</span>
+                <span class="bg-gray-100 px-3 py-1 rounded-lg">Dormitorios: ${propiedad.dormitorios ?? 0}</span>
+                <span class="bg-gray-100 px-3 py-1 rounded-lg">Baños: ${propiedad.banos ?? 0}</span>
+                <span class="bg-gray-100 px-3 py-1 rounded-lg">ID: ${propiedad.id}</span>
+              </div>
+
+              <div class="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onclick="enterEditMode('${propiedad.id}')"
+                  class="bg-blue-100 text-blue-900 px-4 py-2 rounded-lg font-semibold hover:bg-blue-200"
+                >
+                  Editar
+                </button>
+
+                <button
+                  type="button"
+                  onclick="quickChangeStatus('${propiedad.id}', 'disponible')"
+                  class="bg-green-100 text-green-900 px-4 py-2 rounded-lg font-semibold hover:bg-green-200"
+                >
+                  Disponible
+                </button>
+
+                <button
+                  type="button"
+                  onclick="quickChangeStatus('${propiedad.id}', 'reservada')"
+                  class="bg-yellow-100 text-yellow-900 px-4 py-2 rounded-lg font-semibold hover:bg-yellow-200"
+                >
+                  Reservar
+                </button>
+
+                <button
+                  type="button"
+                  onclick="quickChangeStatus('${propiedad.id}', 'vendida')"
+                  class="bg-orange-100 text-orange-900 px-4 py-2 rounded-lg font-semibold hover:bg-orange-200"
+                >
+                  Vender
+                </button>
+
+                <button
+                  type="button"
+                  onclick="deleteProperty('${propiedad.id}')"
+                  class="bg-red-100 text-red-900 px-4 py-2 rounded-lg font-semibold hover:bg-red-200"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+async function loadPropertiesList() {
+  const list = document.getElementById("properties-list");
+  if (!list) return;
+
+  list.innerHTML = `
+    <div class="text-gray-500 text-sm bg-gray-50 border border-gray-200 rounded-xl p-4">
+      Cargando propiedades guardadas...
+    </div>
+  `;
+
+  try {
+    const properties = await fetchExistingProperties();
+    currentProperties = properties;
+    renderPropertiesList(properties);
+  } catch (error) {
+    console.error("Error cargando listado de propiedades:", error);
+    list.innerHTML = `
+      <div class="text-red-600 text-sm bg-red-50 border border-red-200 rounded-xl p-4">
+        No se pudo cargar el listado de propiedades.
+      </div>
+    `;
+  }
+}
+
+async function quickChangeStatus(propertyId, newStatus) {
+  const credentials = getCredentials();
+  if (!credentials) {
+    setStatus("❌ No se ingresaron credenciales AWS.", "error");
+    return;
+  }
+
+  const s3 = createS3Client(credentials);
+
+  try {
+    setStatus("⏳ Actualizando estado de la propiedad...", "info");
+
+    const updatedProperties = currentProperties.map((item) => {
+      if (String(item.id) === String(propertyId)) {
+        return {
+          ...item,
+          estado: newStatus
+        };
+      }
+      return item;
+    });
+
+    await savePropertiesToS3(s3, updatedProperties);
+    currentProperties = updatedProperties;
+
+    if (currentEditingProperty && String(currentEditingProperty.id) === String(propertyId)) {
+      currentEditingProperty.estado = newStatus;
+      document.getElementById("estado").value = newStatus;
+    }
+
+    renderPropertiesList(updatedProperties);
+    setStatus(`✅ Estado actualizado a ${getEstadoLabel(newStatus)}.`, "success");
+  } catch (err) {
+    console.error("Error cambiando estado:", err);
+    setStatus(`❌ Error al cambiar estado: ${err.message || "desconocido"}`, "error");
+  }
+}
+
+async function deleteProperty(propertyId) {
+  const property = currentProperties.find((item) => String(item.id) === String(propertyId));
+  if (!property) {
+    alert("No se encontró la propiedad.");
+    return;
+  }
+
+  const confirmed = confirm(`¿Eliminar la propiedad "${property.titulo}"?\n\nEsta acción la quitará de la web.`);
+  if (!confirmed) return;
+
+  const credentials = getCredentials();
+  if (!credentials) {
+    setStatus("❌ No se ingresaron credenciales AWS.", "error");
+    return;
+  }
+
+  const s3 = createS3Client(credentials);
+
+  try {
+    setStatus("⏳ Eliminando propiedad del sistema...", "info");
+
+    const updatedProperties = currentProperties.filter((item) => String(item.id) !== String(propertyId));
+
+    await savePropertiesToS3(s3, updatedProperties);
+    currentProperties = updatedProperties;
+
+    if (currentEditingProperty && String(currentEditingProperty.id) === String(propertyId)) {
+      cancelEditMode();
+    }
+
+    renderPropertiesList(updatedProperties);
+    setStatus("✅ Propiedad eliminada correctamente del listado.", "success");
+  } catch (err) {
+    console.error("Error eliminando propiedad:", err);
+    setStatus(`❌ Error al eliminar propiedad: ${err.message || "desconocido"}`, "error");
+  }
+}
+
 async function uploadFiles() {
+  const editingId = document.getElementById("editing-id").value.trim();
+  const isEditing = Boolean(editingId);
+
   const titulo = document.getElementById("titulo").value.trim();
   const precioRaw = document.getElementById("precio").value.trim();
   const precio = formatPrice(precioRaw);
@@ -260,8 +528,8 @@ async function uploadFiles() {
     return;
   }
 
-  if (!files.length) {
-    setStatus("❌ Debes seleccionar al menos una foto o video.", "error");
+  if (!isEditing && !files.length) {
+    setStatus("❌ Debes seleccionar al menos una foto o video para crear la propiedad.", "error");
     return;
   }
 
@@ -279,61 +547,98 @@ async function uploadFiles() {
   uploadBtn.classList.add("opacity-60", "cursor-not-allowed");
 
   try {
-    setStatus("⏳ Subiendo archivos a S3...", "info");
+    let imagenes = [];
+    let videos = [];
+    let portada = "";
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const safeName = sanitizeFileName(file.name);
-      const uniqueKey = `${PUBLIC_FOLDER}${baseStamp}_${i + 1}_${safeName}`;
+    if (files.length > 0) {
+      setStatus("⏳ Subiendo archivos a S3...", "info");
 
-      setStatus(`⏳ Subiendo archivo ${i + 1} de ${files.length}: ${file.name}`, "info");
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const safeName = sanitizeFileName(file.name);
+        const uniqueKey = `${PUBLIC_FOLDER}${baseStamp}_${i + 1}_${safeName}`;
 
-      const result = await uploadSingleFile(
-        s3,
-        file,
-        uniqueKey,
-        (percentPerFile) => {
-          const overall = Math.round(((i + percentPerFile / 100) / files.length) * 100);
-          updateProgress(overall);
-        }
-      );
+        setStatus(`⏳ Subiendo archivo ${i + 1} de ${files.length}: ${file.name}`, "info");
 
-      uploadedFiles.push({
-        url: result.Location,
-        tipo: file.type.startsWith("video/") ? "video" : "imagen",
-        nombre: file.name
-      });
+        const result = await uploadSingleFile(
+          s3,
+          file,
+          uniqueKey,
+          (percentPerFile) => {
+            const overall = Math.round(((i + percentPerFile / 100) / files.length) * 100);
+            updateProgress(overall);
+          }
+        );
+
+        uploadedFiles.push({
+          url: result.Location,
+          tipo: file.type.startsWith("video/") ? "video" : "imagen",
+          nombre: file.name
+        });
+      }
+
+      imagenes = uploadedFiles
+        .filter((item) => item.tipo === "imagen")
+        .map((item) => item.url);
+
+      videos = uploadedFiles
+        .filter((item) => item.tipo === "video")
+        .map((item) => item.url);
+
+      portada = imagenes.length > 0 ? imagenes[0] : (uploadedFiles[0]?.url || "");
     }
 
     setStatus("⏳ Leyendo propiedades actuales desde S3...", "info");
 
     const existingProperties = await fetchExistingProperties();
 
-    const imagenes = uploadedFiles
-      .filter((item) => item.tipo === "imagen")
-      .map((item) => item.url);
+    let propertyJson;
 
-    const videos = uploadedFiles
-      .filter((item) => item.tipo === "video")
-      .map((item) => item.url);
+    if (isEditing) {
+      const existingProperty = existingProperties.find((item) => String(item.id) === String(editingId));
+      if (!existingProperty) {
+        throw new Error("No se encontró la propiedad que se estaba editando.");
+      }
 
-    const portada = imagenes.length > 0 ? imagenes[0] : (uploadedFiles[0]?.url || "");
+      propertyJson = {
+        ...existingProperty,
+        titulo: titulo,
+        precio: precio,
+        ubicacion: ubicacion,
+        dormitorios: dormitorios,
+        banos: banos,
+        descripcion: descripcion,
+        estado: estado,
+        imagenUrl: files.length > 0 ? portada : existingProperty.imagenUrl,
+        galeria: files.length > 0 ? imagenes : (existingProperty.galeria || []),
+        videos: files.length > 0 ? videos : (existingProperty.videos || [])
+      };
+    } else {
+      propertyJson = {
+        id: baseStamp,
+        titulo: titulo,
+        precio: precio,
+        ubicacion: ubicacion,
+        dormitorios: dormitorios,
+        banos: banos,
+        imagenUrl: portada,
+        galeria: imagenes,
+        videos: videos,
+        descripcion: descripcion,
+        estado: estado
+      };
+    }
 
-    const propertyJson = {
-      id: baseStamp,
-      titulo: titulo,
-      precio: precio,
-      ubicacion: ubicacion,
-      dormitorios: dormitorios,
-      banos: banos,
-      imagenUrl: portada,
-      galeria: imagenes,
-      videos: videos,
-      descripcion: descripcion,
-      estado: estado
-    };
+    let updatedProperties;
 
-    const updatedProperties = [...existingProperties, propertyJson];
+    if (isEditing) {
+      updatedProperties = existingProperties.map((item) =>
+        String(item.id) === String(editingId) ? propertyJson : item
+      );
+    } else {
+      updatedProperties = [...existingProperties, propertyJson];
+    }
 
     setStatus("⏳ Guardando propiedades actualizadas en S3...", "info");
 
@@ -342,19 +647,26 @@ async function uploadFiles() {
     updateProgress(100);
     jsonOutput.value = JSON.stringify(propertyJson, null, 2);
 
-    setStatus("✅ Propiedad guardada automáticamente en S3 y JSON generado.", "success");
+    currentProperties = updatedProperties;
+    renderPropertiesList(updatedProperties);
 
-    document.getElementById("titulo").value = "";
-    document.getElementById("precio").value = "";
-    document.getElementById("ubicacion").value = "";
-    document.getElementById("dormitorios").value = "";
-    document.getElementById("banos").value = "";
-    document.getElementById("descripcion").value = "";
-    document.getElementById("estado").value = "disponible";
-    fileInput.value = "";
-    document.getElementById("preview").innerHTML = "";
+    if (isEditing) {
+      setStatus("✅ Propiedad actualizada correctamente en S3.", "success");
+      cancelEditMode();
+    } else {
+      setStatus("✅ Propiedad guardada automáticamente en S3 y JSON generado.", "success");
+      document.getElementById("titulo").value = "";
+      document.getElementById("precio").value = "";
+      document.getElementById("ubicacion").value = "";
+      document.getElementById("dormitorios").value = "";
+      document.getElementById("banos").value = "";
+      document.getElementById("descripcion").value = "";
+      document.getElementById("estado").value = "disponible";
+      fileInput.value = "";
+      document.getElementById("preview").innerHTML = "";
+    }
   } catch (err) {
-    console.error("Error al subir:", err);
+    console.error("Error al guardar:", err);
 
     if (
       err.code === "InvalidAccessKeyId" ||
