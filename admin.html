@@ -1,401 +1,252 @@
-const BUCKET_NAME = "propiedades-collipulli-assets";
-const REGION = "us-east-1";
-const PUBLIC_FOLDER = "public/";
-const DATA_FILE_KEY = "data/propiedades.json";
-const DATA_FILE_URL = `https://${BUCKET_NAME}.s3.amazonaws.com/${DATA_FILE_KEY}`;
-
-document.addEventListener("DOMContentLoaded", () => {
-  const fileInput = document.getElementById("file-upload");
-  const precioInput = document.getElementById("precio");
-
-  if (fileInput) {
-    fileInput.addEventListener("change", renderPreview);
-  }
-
-  if (precioInput) {
-    precioInput.addEventListener("blur", () => {
-      precioInput.value = formatPrice(precioInput.value);
-    });
-  }
-});
-
-function clearCredentials() {
-  localStorage.removeItem("aws_id");
-  localStorage.removeItem("aws_secret");
-  alert("Credenciales borradas. La próxima vez se volverán a pedir.");
-  location.reload();
-}
-
-function setStatus(message, type = "info") {
-  const status = document.getElementById("status");
-  const base = "text-sm font-medium min-h-[24px]";
-
-  if (type === "error") {
-    status.className = `${base} text-red-600 font-bold`;
-  } else if (type === "success") {
-    status.className = `${base} text-green-600 font-bold`;
-  } else if (type === "warning") {
-    status.className = `${base} text-yellow-600 font-bold`;
-  } else {
-    status.className = `${base} text-blue-600 font-bold`;
-  }
-
-  status.innerText = message;
-}
-
-function updateProgress(percent) {
-  const bar = document.getElementById("progress-bar");
-  const safePercent = Math.max(0, Math.min(100, percent));
-  bar.style.width = `${safePercent}%`;
-  bar.innerText = `${safePercent}%`;
-}
-
-function sanitizeFileName(fileName) {
-  return fileName
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/[^a-zA-Z0-9._-]/g, "")
-    .toLowerCase();
-}
-
-function formatPrice(value) {
-  if (!value) return "";
-
-  const clean = String(value).replace(/[^\d]/g, "");
-  if (!clean) return "";
-
-  const numberValue = Number(clean);
-  if (Number.isNaN(numberValue)) return value;
-
-  return "$" + numberValue.toLocaleString("es-CL");
-}
-
-function renderPreview() {
-  const preview = document.getElementById("preview");
-  const files = Array.from(document.getElementById("file-upload").files);
-  preview.innerHTML = "";
-
-  if (!files.length) return;
-
-  let firstImageMarked = false;
-
-  files.forEach((file, index) => {
-    const item = document.createElement("div");
-    item.className = "border rounded-lg bg-white p-2 shadow-sm";
-
-    const label = document.createElement("div");
-    label.className = "text-xs font-bold text-gray-600 mb-2";
-
-    const isImage = file.type.startsWith("image/");
-    const isVideo = file.type.startsWith("video/");
-
-    if (isImage && !firstImageMarked) {
-      label.textContent = "Portada";
-      firstImageMarked = true;
-    } else {
-      label.textContent = `Archivo ${index + 1}`;
-    }
-
-    item.appendChild(label);
-
-    if (isImage) {
-      const img = document.createElement("img");
-      img.src = URL.createObjectURL(file);
-      img.className = "w-full h-28 object-cover rounded";
-      item.appendChild(img);
-    } else if (isVideo) {
-      const videoBox = document.createElement("div");
-      videoBox.className = "w-full h-28 rounded bg-gray-900 text-white flex items-center justify-center text-xs text-center p-2";
-      videoBox.textContent = "Video seleccionado";
-      item.appendChild(videoBox);
-    } else {
-      const fileBox = document.createElement("div");
-      fileBox.className = "w-full h-28 rounded bg-gray-200 text-gray-700 flex items-center justify-center text-xs text-center p-2";
-      fileBox.textContent = "Archivo no compatible";
-      item.appendChild(fileBox);
-    }
-
-    const name = document.createElement("p");
-    name.className = "text-xs text-gray-600 mt-2 break-words";
-    name.textContent = file.name;
-    item.appendChild(name);
-
-    preview.appendChild(item);
-  });
-}
-
-function getCredentials() {
-  let accessKey = localStorage.getItem("aws_id");
-  let secretKey = localStorage.getItem("aws_secret");
-
-  if (!accessKey || !secretKey) {
-    accessKey = prompt("Introduce tu AWS Access Key ID:");
-    secretKey = prompt("Introduce tu AWS Secret Access Key:");
-
-    if (!accessKey || !secretKey) {
-      return null;
-    }
-
-    accessKey = accessKey.trim();
-    secretKey = secretKey.trim();
-
-    localStorage.setItem("aws_id", accessKey);
-    localStorage.setItem("aws_secret", secretKey);
-  }
-
-  return { accessKey, secretKey };
-}
-
-function createS3Client(credentials) {
-  AWS.config.update({
-    accessKeyId: credentials.accessKey,
-    secretAccessKey: credentials.secretKey,
-    region: REGION
-  });
-
-  return new AWS.S3({
-    apiVersion: "2006-03-01"
-  });
-}
-
-function uploadSingleFile(s3, file, key, onProgress) {
-  return new Promise((resolve, reject) => {
-    const params = {
-      Bucket: BUCKET_NAME,
-      Key: key,
-      Body: file,
-      ContentType: file.type
-    };
-
-    const uploader = s3.upload(params);
-
-    uploader.on("httpUploadProgress", (progress) => {
-      if (progress && progress.total) {
-        const percent = Math.round((progress.loaded / progress.total) * 100);
-        onProgress(percent);
-      }
-    });
-
-    uploader.send((err, data) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(data);
-      }
-    });
-  });
-}
-
-async function fetchExistingProperties() {
-  const response = await fetch(`${DATA_FILE_URL}?v=${Date.now()}`);
-
-  if (!response.ok) {
-    throw new Error("No se pudo leer data/propiedades.json desde S3");
-  }
-
-  const data = await response.json();
-
-  if (!Array.isArray(data)) {
-    throw new Error("El archivo data/propiedades.json no contiene un array válido");
-  }
-
-  return data;
-}
-
-function savePropertiesToS3(s3, properties) {
-  return new Promise((resolve, reject) => {
-    const params = {
-      Bucket: BUCKET_NAME,
-      Key: DATA_FILE_KEY,
-      Body: JSON.stringify(properties, null, 2),
-      ContentType: "application/json; charset=utf-8"
-    };
-
-    s3.putObject(params, (err, data) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(data);
-      }
-    });
-  });
-}
-
-async function uploadFiles() {
-  const titulo = document.getElementById("titulo").value.trim();
-  const precioRaw = document.getElementById("precio").value.trim();
-  const precio = formatPrice(precioRaw);
-  const ubicacion = document.getElementById("ubicacion").value.trim();
-  const dormitorios = parseInt(document.getElementById("dormitorios").value, 10);
-  const banos = parseInt(document.getElementById("banos").value, 10);
-  const descripcion = document.getElementById("descripcion").value.trim();
-  const estado = document.getElementById("estado").value;
-
-  const fileInput = document.getElementById("file-upload");
-  const files = Array.from(fileInput.files);
-  const uploadBtn = document.getElementById("upload-btn");
-  const jsonOutput = document.getElementById("json-output");
-
-  jsonOutput.value = "";
-  updateProgress(0);
-
-  if (!titulo || !precio || !ubicacion) {
-    setStatus("❌ Debes completar título, precio y ubicación.", "error");
-    return;
-  }
-
-  if (Number.isNaN(dormitorios) || Number.isNaN(banos)) {
-    setStatus("❌ Debes ingresar dormitorios y baños.", "error");
-    return;
-  }
-
-  if (!descripcion) {
-    setStatus("❌ Debes ingresar una descripción.", "error");
-    return;
-  }
-
-  if (!estado) {
-    setStatus("❌ Debes seleccionar un estado.", "error");
-    return;
-  }
-
-  if (!files.length) {
-    setStatus("❌ Debes seleccionar al menos una foto o video.", "error");
-    return;
-  }
-
-  const credentials = getCredentials();
-  if (!credentials) {
-    setStatus("❌ No se ingresaron credenciales AWS.", "error");
-    return;
-  }
-
-  const s3 = createS3Client(credentials);
-  const uploadedFiles = [];
-  const baseStamp = Date.now();
-
-  uploadBtn.disabled = true;
-  uploadBtn.classList.add("opacity-60", "cursor-not-allowed");
-
-  try {
-    setStatus("⏳ Subiendo archivos a S3...", "info");
-
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const safeName = sanitizeFileName(file.name);
-      const uniqueKey = `${PUBLIC_FOLDER}${baseStamp}_${i + 1}_${safeName}`;
-
-      setStatus(`⏳ Subiendo archivo ${i + 1} de ${files.length}: ${file.name}`, "info");
-
-      const result = await uploadSingleFile(
-        s3,
-        file,
-        uniqueKey,
-        (percentPerFile) => {
-          const overall = Math.round(((i + percentPerFile / 100) / files.length) * 100);
-          updateProgress(overall);
-        }
-      );
-
-      uploadedFiles.push({
-        url: result.Location,
-        tipo: file.type.startsWith("video/") ? "video" : "imagen",
-        nombre: file.name
-      });
-    }
-
-    setStatus("⏳ Leyendo propiedades actuales desde S3...", "info");
-
-    const existingProperties = await fetchExistingProperties();
-
-    const imagenes = uploadedFiles
-      .filter((item) => item.tipo === "imagen")
-      .map((item) => item.url);
-
-    const videos = uploadedFiles
-      .filter((item) => item.tipo === "video")
-      .map((item) => item.url);
-
-    const portada = imagenes.length > 0 ? imagenes[0] : (uploadedFiles[0]?.url || "");
-
-    const propertyJson = {
-      id: baseStamp,
-      titulo: titulo,
-      precio: precio,
-      ubicacion: ubicacion,
-      dormitorios: dormitorios,
-      banos: banos,
-      imagenUrl: portada,
-      galeria: imagenes,
-      videos: videos,
-      descripcion: descripcion,
-      estado: estado
-    };
-
-    const updatedProperties = [...existingProperties, propertyJson];
-
-    setStatus("⏳ Guardando propiedades actualizadas en S3...", "info");
-
-    await savePropertiesToS3(s3, updatedProperties);
-
-    updateProgress(100);
-    jsonOutput.value = JSON.stringify(propertyJson, null, 2);
-
-    setStatus("✅ Propiedad guardada automáticamente en S3 y JSON generado.", "success");
-
-    document.getElementById("titulo").value = "";
-    document.getElementById("precio").value = "";
-    document.getElementById("ubicacion").value = "";
-    document.getElementById("dormitorios").value = "";
-    document.getElementById("banos").value = "";
-    document.getElementById("descripcion").value = "";
-    document.getElementById("estado").value = "disponible";
-    fileInput.value = "";
-    document.getElementById("preview").innerHTML = "";
-  } catch (err) {
-    console.error("Error al subir:", err);
-
-    if (
-      err.code === "InvalidAccessKeyId" ||
-      err.code === "SignatureDoesNotMatch" ||
-      err.code === "CredentialsError"
-    ) {
-      localStorage.removeItem("aws_id");
-      localStorage.removeItem("aws_secret");
-      setStatus("❌ Credenciales AWS inválidas. Se borraron para volver a ingresarlas.", "error");
-      return;
-    }
-
-    if (err.code === "AccessDenied") {
-      setStatus("❌ AccessDenied: faltan permisos AWS para leer o escribir data/propiedades.json.", "error");
-      return;
-    }
-
-    setStatus(`❌ Error al guardar en S3: ${err.message || "desconocido"}`, "error");
-  } finally {
-    uploadBtn.disabled = false;
-    uploadBtn.classList.remove("opacity-60", "cursor-not-allowed");
-  }
-}
-
-function copyJson() {
-  const jsonOutput = document.getElementById("json-output");
-
-  if (!jsonOutput.value.trim()) {
-    alert("Aún no hay JSON para copiar.");
-    return;
-  }
-
-  jsonOutput.select();
-  jsonOutput.setSelectionRange(0, 999999);
-
-  try {
-    document.execCommand("copy");
-    alert("JSON copiado al portapapeles.");
-  } catch (error) {
-    navigator.clipboard.writeText(jsonOutput.value)
-      .then(() => alert("JSON copiado al portapapeles."))
-      .catch(() => alert("No se pudo copiar automáticamente. Cópialo manualmente."));
-  }
-}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel Admin - Propiedades Collipulli</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/aws-sdk/2.1226.0/aws-sdk.min.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 md:p-8">
+
+  <div class="max-w-5xl mx-auto bg-white p-6 md:p-8 rounded-2xl shadow-xl">
+    <div class="mb-8 text-center">
+      <h1 class="text-2xl md:text-3xl font-bold text-blue-900">
+        Panel de Administración - Propiedades Collipulli
+      </h1>
+      <p class="text-gray-500 mt-2 text-sm md:text-base">
+        Carga, edita, cambia estado y elimina propiedades guardadas en S3.
+      </p>
+    </div>
+
+    <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6">
+      <h2 class="font-bold text-blue-900 mb-2">Flujo de trabajo</h2>
+      <p class="text-sm text-gray-700 leading-6">
+        1. Completa o edita los datos de la propiedad.<br>
+        2. Selecciona fotos y/o videos si deseas reemplazarlos.<br>
+        3. Elige el estado de publicación.<br>
+        4. Guarda en S3.<br>
+        5. La propiedad quedará registrada automáticamente en el sistema.
+      </p>
+    </div>
+
+    <div id="edit-mode-banner" class="hidden bg-yellow-50 border border-yellow-200 text-yellow-900 rounded-xl p-4 mb-6">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <p class="font-bold">Modo edición activado</p>
+          <p class="text-sm">Estás editando una propiedad existente.</p>
+        </div>
+        <button
+          type="button"
+          onclick="cancelEditMode()"
+          class="bg-yellow-200 hover:bg-yellow-300 text-yellow-900 px-4 py-2 rounded-lg font-semibold"
+        >
+          Cancelar edición
+        </button>
+      </div>
+    </div>
+
+    <input type="hidden" id="editing-id" value="" />
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+      <div>
+        <label for="titulo" class="block text-gray-700 font-semibold mb-2">Título</label>
+        <input
+          type="text"
+          id="titulo"
+          placeholder="Ej: Casa Sector Los Jardines"
+          class="block w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
+        />
+      </div>
+
+      <div>
+        <label for="precio" class="block text-gray-700 font-semibold mb-2">Precio</label>
+        <input
+          type="text"
+          id="precio"
+          placeholder="Ej: $75.000.000"
+          class="block w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
+        />
+        <p class="text-xs text-gray-500 mt-1">
+          Puedes escribir el valor sin puntos y el sistema lo formateará.
+        </p>
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <label for="ubicacion" class="block text-gray-700 font-semibold mb-2">Ubicación</label>
+      <input
+        type="text"
+        id="ubicacion"
+        placeholder="Ej: Collipulli, Región de la Araucanía"
+        class="block w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
+      />
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+      <div>
+        <label for="dormitorios" class="block text-gray-700 font-semibold mb-2">Dormitorios</label>
+        <input
+          type="number"
+          id="dormitorios"
+          min="0"
+          placeholder="Ej: 3"
+          class="block w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
+        />
+      </div>
+
+      <div>
+        <label for="banos" class="block text-gray-700 font-semibold mb-2">Baños</label>
+        <input
+          type="number"
+          id="banos"
+          min="0"
+          placeholder="Ej: 2"
+          class="block w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
+        />
+      </div>
+
+      <div>
+        <label for="estado" class="block text-gray-700 font-semibold mb-2">Estado</label>
+        <select
+          id="estado"
+          class="block w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
+        >
+          <option value="disponible">Disponible</option>
+          <option value="reservada">Reservada</option>
+          <option value="vendida">Vendida</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="mb-6">
+      <label for="descripcion" class="block text-gray-700 font-semibold mb-2">Descripción</label>
+      <textarea
+        id="descripcion"
+        rows="6"
+        placeholder="Ej: Hermosa casa ubicada a 10 km de Collipulli, sector Victoria Unida..."
+        class="block w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none resize-y"
+      ></textarea>
+      <p class="text-xs text-gray-500 mt-1">
+        Esta descripción se mostrará en la ficha individual de la propiedad.
+      </p>
+    </div>
+
+    <div class="mb-6">
+      <label for="file-upload" class="block text-gray-700 font-semibold mb-2">
+        Fotos y videos
+      </label>
+      <input
+        type="file"
+        id="file-upload"
+        multiple
+        accept="image/*,video/*"
+        class="block w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
+      />
+      <div class="mt-2 text-sm text-gray-500 leading-6">
+        <p>• Si estás creando, debes subir archivos.</p>
+        <p>• Si estás editando, puedes dejar esto vacío para mantener los archivos actuales.</p>
+        <p>• Si subes nuevos archivos durante edición, se reemplazará la portada/galería/videos de la propiedad.</p>
+      </div>
+    </div>
+
+    <div class="flex flex-col md:flex-row gap-3 mb-4">
+      <button
+        id="upload-btn"
+        onclick="uploadFiles()"
+        class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 w-full font-bold transition-all shadow-lg active:scale-95"
+      >
+        Guardar propiedad en S3
+      </button>
+
+      <button
+        id="cancel-edit-btn"
+        type="button"
+        onclick="cancelEditMode()"
+        class="hidden bg-yellow-200 text-yellow-900 px-6 py-3 rounded-lg hover:bg-yellow-300 w-full font-bold transition-all"
+      >
+        Cancelar edición
+      </button>
+
+      <button
+        type="button"
+        onclick="clearCredentials()"
+        class="bg-gray-200 text-gray-800 px-6 py-3 rounded-lg hover:bg-gray-300 w-full font-bold transition-all"
+      >
+        Cambiar llaves AWS
+      </button>
+    </div>
+
+    <div class="mb-6">
+      <p id="status" class="text-sm font-medium min-h-[24px]"></p>
+      <div class="w-full bg-gray-200 rounded-full h-4 mt-3 overflow-hidden">
+        <div
+          id="progress-bar"
+          class="bg-blue-600 h-4 rounded-full text-xs text-white text-center leading-4"
+          style="width: 0%;"
+        >
+          0%
+        </div>
+      </div>
+    </div>
+
+    <div class="mb-6">
+      <h2 class="text-lg font-bold text-gray-800 mb-2">Vista previa de archivos seleccionados</h2>
+      <div id="preview" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3"></div>
+    </div>
+
+    <hr class="my-6 border-gray-200" />
+
+    <div class="mb-10">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-2">
+        <h2 class="text-lg font-bold text-gray-800">JSON generado</h2>
+        <button
+          type="button"
+          onclick="copyJson()"
+          class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-semibold"
+        >
+          Copiar JSON
+        </button>
+      </div>
+
+      <textarea
+        id="json-output"
+        rows="16"
+        class="w-full border border-gray-300 rounded-lg p-3 bg-gray-50 font-mono text-sm outline-none focus:ring-2 focus:ring-green-500"
+        placeholder="Aquí aparecerá el JSON generado..."
+      ></textarea>
+
+      <p class="text-xs text-gray-500 mt-2 leading-5">
+        Este JSON es solo informativo. La propiedad ya habrá quedado guardada automáticamente en S3 al finalizar correctamente.
+      </p>
+    </div>
+
+    <hr class="my-6 border-gray-200" />
+
+    <div>
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+        <h2 class="text-xl font-bold text-gray-800">Propiedades guardadas</h2>
+        <button
+          type="button"
+          onclick="loadPropertiesList()"
+          class="bg-blue-100 text-blue-900 px-4 py-2 rounded-lg hover:bg-blue-200 font-semibold"
+        >
+          Recargar listado
+        </button>
+      </div>
+
+      <p class="text-sm text-gray-500 mb-4">
+        Aquí puedes revisar, editar, cambiar el estado o eliminar propiedades guardadas en S3.
+      </p>
+
+      <div id="properties-list" class="space-y-4">
+        <div class="text-gray-500 text-sm bg-gray-50 border border-gray-200 rounded-xl p-4">
+          Aún no se ha cargado el listado de propiedades.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="upload.js"></script>
+</body>
+</html>
