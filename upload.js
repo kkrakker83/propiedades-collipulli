@@ -21,6 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  clearCoverImageUI();
   loadPropertiesList();
 });
 
@@ -88,14 +89,100 @@ function getEstadoLabel(estado) {
   return "DISPONIBLE";
 }
 
+function updateCoverImageOptions(imageUrls = [], selectedUrl = "") {
+  const select = document.getElementById("cover-image-select");
+  if (!select) return;
+
+  select.innerHTML = `<option value="">Selecciona una imagen como portada</option>`;
+
+  imageUrls.forEach((url, index) => {
+    const option = document.createElement("option");
+    option.value = url;
+    option.textContent = `Foto ${index + 1}`;
+    if (url === selectedUrl) {
+      option.selected = true;
+    }
+    select.appendChild(option);
+  });
+}
+
+function renderExistingGalleryPreview(imageUrls = [], selectedUrl = "") {
+  const container = document.getElementById("existing-gallery-preview");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  if (!imageUrls.length) return;
+
+  imageUrls.forEach((url, index) => {
+    const item = document.createElement("div");
+    item.className = `border rounded-lg bg-white p-2 shadow-sm ${url === selectedUrl ? "ring-2 ring-blue-500" : ""}`;
+
+    item.innerHTML = `
+      <img src="${url}" class="w-full h-28 object-cover rounded" alt="Foto ${index + 1}">
+      <button
+        type="button"
+        class="mt-2 w-full text-xs font-semibold px-2 py-2 rounded-lg ${url === selectedUrl ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}"
+        onclick="selectExistingCoverImage('${url.replace(/'/g, "\\'")}')"
+      >
+        ${url === selectedUrl ? "Portada seleccionada" : "Usar como portada"}
+      </button>
+    `;
+    container.appendChild(item);
+  });
+}
+
+function selectExistingCoverImage(url) {
+  const select = document.getElementById("cover-image-select");
+  if (select) {
+    select.value = url;
+  }
+
+  const imageUrls =
+    currentEditingProperty && Array.isArray(currentEditingProperty.galeria) && currentEditingProperty.galeria.length
+      ? currentEditingProperty.galeria
+      : currentEditingProperty && currentEditingProperty.imagenUrl
+        ? [currentEditingProperty.imagenUrl]
+        : [];
+
+  renderExistingGalleryPreview(imageUrls, url);
+}
+
+function clearCoverImageUI() {
+  updateCoverImageOptions([], "");
+  renderExistingGalleryPreview([], "");
+}
+
 function renderPreview() {
   const preview = document.getElementById("preview");
   const files = Array.from(document.getElementById("file-upload").files);
   preview.innerHTML = "";
 
-  if (!files.length) return;
+  if (!files.length) {
+    if (currentEditingProperty && Array.isArray(currentEditingProperty.galeria) && currentEditingProperty.galeria.length) {
+      const selectedCover =
+        document.getElementById("cover-image-select").value ||
+        currentEditingProperty.imagenUrl ||
+        currentEditingProperty.galeria[0] ||
+        "";
+
+      updateCoverImageOptions(currentEditingProperty.galeria, selectedCover);
+      renderExistingGalleryPreview(currentEditingProperty.galeria, selectedCover);
+    } else if (currentEditingProperty && currentEditingProperty.imagenUrl) {
+      const selectedCover =
+        document.getElementById("cover-image-select").value ||
+        currentEditingProperty.imagenUrl;
+
+      updateCoverImageOptions([currentEditingProperty.imagenUrl], selectedCover);
+      renderExistingGalleryPreview([currentEditingProperty.imagenUrl], selectedCover);
+    } else {
+      clearCoverImageUI();
+    }
+    return;
+  }
 
   let firstImageMarked = false;
+  const uploadedImageObjectUrls = [];
 
   files.forEach((file, index) => {
     const item = document.createElement("div");
@@ -108,7 +195,7 @@ function renderPreview() {
     const isVideo = file.type.startsWith("video/");
 
     if (isImage && !firstImageMarked) {
-      label.textContent = "Portada";
+      label.textContent = "Portada sugerida";
       firstImageMarked = true;
     } else {
       label.textContent = `Archivo ${index + 1}`;
@@ -117,8 +204,11 @@ function renderPreview() {
     item.appendChild(label);
 
     if (isImage) {
+      const objectUrl = URL.createObjectURL(file);
+      uploadedImageObjectUrls.push({ name: file.name, url: objectUrl });
+
       const img = document.createElement("img");
-      img.src = URL.createObjectURL(file);
+      img.src = objectUrl;
       img.className = "w-full h-28 object-cover rounded";
       item.appendChild(img);
     } else if (isVideo) {
@@ -140,6 +230,24 @@ function renderPreview() {
 
     preview.appendChild(item);
   });
+
+  if (uploadedImageObjectUrls.length) {
+    const select = document.getElementById("cover-image-select");
+    select.innerHTML = `<option value="">Selecciona una imagen como portada</option>`;
+
+    uploadedImageObjectUrls.forEach((item, index) => {
+      const option = document.createElement("option");
+      option.value = item.name;
+      option.textContent = `Foto nueva ${index + 1} - ${item.name}`;
+      if (index === 0) option.selected = true;
+      select.appendChild(option);
+    });
+
+    renderExistingGalleryPreview(
+      uploadedImageObjectUrls.map((item) => item.url),
+      uploadedImageObjectUrls[0].url
+    );
+  }
 }
 
 function getCredentials() {
@@ -256,6 +364,18 @@ function enterEditMode(propiedadId) {
   document.getElementById("banos").value = property.banos ?? "";
   document.getElementById("descripcion").value = property.descripcion || "";
   document.getElementById("estado").value = property.estado || "disponible";
+  document.getElementById("file-upload").value = "";
+  document.getElementById("preview").innerHTML = "";
+
+  const existingGallery =
+    Array.isArray(property.galeria) && property.galeria.length
+      ? property.galeria
+      : (property.imagenUrl ? [property.imagenUrl] : []);
+
+  const selectedCover = property.imagenUrl || existingGallery[0] || "";
+
+  updateCoverImageOptions(existingGallery, selectedCover);
+  renderExistingGalleryPreview(existingGallery, selectedCover);
 
   document.getElementById("upload-btn").textContent = "Actualizar propiedad en S3";
   document.getElementById("cancel-edit-btn").classList.remove("hidden");
@@ -277,6 +397,7 @@ function cancelEditMode() {
   document.getElementById("estado").value = "disponible";
   document.getElementById("file-upload").value = "";
   document.getElementById("preview").innerHTML = "";
+  clearCoverImageUI();
   document.getElementById("upload-btn").textContent = "Guardar propiedad en S3";
   document.getElementById("cancel-edit-btn").classList.add("hidden");
   document.getElementById("edit-mode-banner").classList.add("hidden");
@@ -499,6 +620,7 @@ async function uploadFiles() {
   const banos = parseInt(document.getElementById("banos").value, 10);
   const descripcion = document.getElementById("descripcion").value.trim();
   const estado = document.getElementById("estado").value;
+  const selectedCoverValue = document.getElementById("cover-image-select").value;
 
   const fileInput = document.getElementById("file-upload");
   const files = Array.from(fileInput.files);
@@ -586,7 +708,14 @@ async function uploadFiles() {
         .filter((item) => item.tipo === "video")
         .map((item) => item.url);
 
-      portada = imagenes.length > 0 ? imagenes[0] : (uploadedFiles[0]?.url || "");
+      if (imagenes.length > 0) {
+        const selectedUploadedCover = uploadedFiles.find(
+          (item) => item.tipo === "imagen" && item.nombre === selectedCoverValue
+        );
+        portada = selectedUploadedCover ? selectedUploadedCover.url : imagenes[0];
+      } else {
+        portada = uploadedFiles[0]?.url || "";
+      }
     }
 
     setStatus("⏳ Leyendo propiedades actuales desde S3...", "info");
@@ -601,6 +730,22 @@ async function uploadFiles() {
         throw new Error("No se encontró la propiedad que se estaba editando.");
       }
 
+      const existingGallery =
+        Array.isArray(existingProperty.galeria) && existingProperty.galeria.length
+          ? existingProperty.galeria
+          : (existingProperty.imagenUrl ? [existingProperty.imagenUrl] : []);
+
+      const finalGallery = files.length > 0 ? imagenes : existingGallery;
+      const finalVideos = files.length > 0 ? videos : (existingProperty.videos || []);
+
+      let finalCover = existingProperty.imagenUrl || finalGallery[0] || "";
+
+      if (files.length > 0) {
+        finalCover = portada || finalGallery[0] || "";
+      } else if (selectedCoverValue) {
+        finalCover = selectedCoverValue;
+      }
+
       propertyJson = {
         ...existingProperty,
         titulo: titulo,
@@ -610,11 +755,13 @@ async function uploadFiles() {
         banos: banos,
         descripcion: descripcion,
         estado: estado,
-        imagenUrl: files.length > 0 ? portada : existingProperty.imagenUrl,
-        galeria: files.length > 0 ? imagenes : (existingProperty.galeria || []),
-        videos: files.length > 0 ? videos : (existingProperty.videos || [])
+        imagenUrl: finalCover,
+        galeria: finalGallery,
+        videos: finalVideos
       };
     } else {
+      let finalCover = portada || imagenes[0] || "";
+
       propertyJson = {
         id: baseStamp,
         titulo: titulo,
@@ -622,7 +769,7 @@ async function uploadFiles() {
         ubicacion: ubicacion,
         dormitorios: dormitorios,
         banos: banos,
-        imagenUrl: portada,
+        imagenUrl: finalCover,
         galeria: imagenes,
         videos: videos,
         descripcion: descripcion,
@@ -662,8 +809,9 @@ async function uploadFiles() {
       document.getElementById("banos").value = "";
       document.getElementById("descripcion").value = "";
       document.getElementById("estado").value = "disponible";
-      fileInput.value = "";
+      document.getElementById("file-upload").value = "";
       document.getElementById("preview").innerHTML = "";
+      clearCoverImageUI();
     }
   } catch (err) {
     console.error("Error al guardar:", err);
