@@ -15,7 +15,7 @@
         Panel de Administración - Propiedades Collipulli
       </h1>
       <p class="text-gray-500 mt-2 text-sm md:text-base">
-        Carga, edita, cambia estado y elimina propiedades guardadas en S3.
+        Carga, edita, cambia estado, portada y elimina propiedades guardadas en S3.
       </p>
     </div>
 
@@ -25,8 +25,9 @@
         1. Completa o edita los datos de la propiedad.<br>
         2. Selecciona fotos y/o videos si deseas reemplazarlos.<br>
         3. Elige el estado de publicación.<br>
-        4. Guarda en S3.<br>
-        5. La propiedad quedará registrada automáticamente en el sistema.
+        4. Define la foto de portada.<br>
+        5. Guarda en S3.<br>
+        6. La propiedad quedará registrada automáticamente en el sistema.
       </p>
     </div>
 
@@ -148,6 +149,23 @@
         <p>• Si estás editando, puedes dejar esto vacío para mantener los archivos actuales.</p>
         <p>• Si subes nuevos archivos durante edición, se reemplazará la portada/galería/videos de la propiedad.</p>
       </div>
+    </div>
+
+    <div class="mb-6">
+      <label for="cover-image-select" class="block text-gray-700 font-semibold mb-2">Foto de portada</label>
+      <select
+        id="cover-image-select"
+        class="block w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
+      >
+        <option value="">Selecciona una imagen como portada</option>
+      </select>
+
+      <p class="text-xs text-gray-500 mt-2">
+        En edición puedes elegir una foto existente como portada sin volver a subir toda la galería.
+        Si subes archivos nuevos, también podrás escoger cuál será la portada.
+      </p>
+
+      <div id="existing-gallery-preview" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 mt-4"></div>
     </div>
 
     <div class="flex flex-col md:flex-row gap-3 mb-4">
