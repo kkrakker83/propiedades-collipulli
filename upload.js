@@ -89,6 +89,29 @@ function getEstadoLabel(estado) {
   return "DISPONIBLE";
 }
 
+function getPropertyImages(property) {
+  if (!property) return [];
+
+  const images = [];
+
+  if (Array.isArray(property.galeria)) {
+    property.galeria.forEach((url) => {
+      if (typeof url === "string" && url.trim()) {
+        images.push(url.trim());
+      }
+    });
+  }
+
+  if (property.imagenUrl && typeof property.imagenUrl === "string" && property.imagenUrl.trim()) {
+    const mainImage = property.imagenUrl.trim();
+    if (!images.includes(mainImage)) {
+      images.unshift(mainImage);
+    }
+  }
+
+  return images;
+}
+
 function updateCoverImageOptions(imageUrls = [], selectedUrl = "") {
   const select = document.getElementById("cover-image-select");
   if (!select) return;
@@ -138,13 +161,7 @@ function selectExistingCoverImage(url) {
     select.value = url;
   }
 
-  const imageUrls =
-    currentEditingProperty && Array.isArray(currentEditingProperty.galeria) && currentEditingProperty.galeria.length
-      ? currentEditingProperty.galeria
-      : currentEditingProperty && currentEditingProperty.imagenUrl
-        ? [currentEditingProperty.imagenUrl]
-        : [];
-
+  const imageUrls = getPropertyImages(currentEditingProperty);
   renderExistingGalleryPreview(imageUrls, url);
 }
 
@@ -159,22 +176,16 @@ function renderPreview() {
   preview.innerHTML = "";
 
   if (!files.length) {
-    if (currentEditingProperty && Array.isArray(currentEditingProperty.galeria) && currentEditingProperty.galeria.length) {
+    if (currentEditingProperty) {
+      const existingGallery = getPropertyImages(currentEditingProperty);
       const selectedCover =
         document.getElementById("cover-image-select").value ||
         currentEditingProperty.imagenUrl ||
-        currentEditingProperty.galeria[0] ||
+        existingGallery[0] ||
         "";
 
-      updateCoverImageOptions(currentEditingProperty.galeria, selectedCover);
-      renderExistingGalleryPreview(currentEditingProperty.galeria, selectedCover);
-    } else if (currentEditingProperty && currentEditingProperty.imagenUrl) {
-      const selectedCover =
-        document.getElementById("cover-image-select").value ||
-        currentEditingProperty.imagenUrl;
-
-      updateCoverImageOptions([currentEditingProperty.imagenUrl], selectedCover);
-      renderExistingGalleryPreview([currentEditingProperty.imagenUrl], selectedCover);
+      updateCoverImageOptions(existingGallery, selectedCover);
+      renderExistingGalleryPreview(existingGallery, selectedCover);
     } else {
       clearCoverImageUI();
     }
@@ -233,15 +244,17 @@ function renderPreview() {
 
   if (uploadedImageObjectUrls.length) {
     const select = document.getElementById("cover-image-select");
-    select.innerHTML = `<option value="">Selecciona una imagen como portada</option>`;
+    if (select) {
+      select.innerHTML = `<option value="">Selecciona una imagen como portada</option>`;
 
-    uploadedImageObjectUrls.forEach((item, index) => {
-      const option = document.createElement("option");
-      option.value = item.name;
-      option.textContent = `Foto nueva ${index + 1} - ${item.name}`;
-      if (index === 0) option.selected = true;
-      select.appendChild(option);
-    });
+      uploadedImageObjectUrls.forEach((item, index) => {
+        const option = document.createElement("option");
+        option.value = item.name;
+        option.textContent = `Foto nueva ${index + 1} - ${item.name}`;
+        if (index === 0) option.selected = true;
+        select.appendChild(option);
+      });
+    }
 
     renderExistingGalleryPreview(
       uploadedImageObjectUrls.map((item) => item.url),
@@ -367,11 +380,7 @@ function enterEditMode(propiedadId) {
   document.getElementById("file-upload").value = "";
   document.getElementById("preview").innerHTML = "";
 
-  const existingGallery =
-    Array.isArray(property.galeria) && property.galeria.length
-      ? property.galeria
-      : (property.imagenUrl ? [property.imagenUrl] : []);
-
+  const existingGallery = getPropertyImages(property);
   const selectedCover = property.imagenUrl || existingGallery[0] || "";
 
   updateCoverImageOptions(existingGallery, selectedCover);
@@ -730,11 +739,7 @@ async function uploadFiles() {
         throw new Error("No se encontró la propiedad que se estaba editando.");
       }
 
-      const existingGallery =
-        Array.isArray(existingProperty.galeria) && existingProperty.galeria.length
-          ? existingProperty.galeria
-          : (existingProperty.imagenUrl ? [existingProperty.imagenUrl] : []);
-
+      const existingGallery = getPropertyImages(existingProperty);
       const finalGallery = files.length > 0 ? imagenes : existingGallery;
       const finalVideos = files.length > 0 ? videos : (existingProperty.videos || []);
 
@@ -760,7 +765,7 @@ async function uploadFiles() {
         videos: finalVideos
       };
     } else {
-      let finalCover = portada || imagenes[0] || "";
+      const finalCover = portada || imagenes[0] || "";
 
       propertyJson = {
         id: baseStamp,
