@@ -3,6 +3,50 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Google tag (GA4) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-LXD6M6B2HH"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+
+    gtag('consent', 'default', {
+      analytics_storage: 'denied',
+      ad_storage: 'denied',
+      ad_user_data: 'denied',
+      ad_personalization: 'denied'
+    });
+
+    gtag('js', new Date());
+    gtag('config', 'G-LXD6M6B2HH');
+  </script>
+
+  <!-- Meta Pixel Code -->
+  <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;
+    n.push=n;
+    n.loaded=!0;
+    n.version='2.0';
+    n.queue=[];
+    t=b.createElement(e);
+    t.async=!0;
+    t.src=v;
+    s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}
+    (window, document,'script','https://connect.facebook.net/en_US/fbevents.js');
+
+    fbq('init', '26941683598762270');
+    fbq('track', 'PageView');
+  </script>
+  <noscript>
+    <img height="1" width="1" style="display:none"
+         src="https://www.facebook.com/tr?id=26941683598762270&ev=PageView&noscript=1"/>
+  </noscript>
+  <!-- End Meta Pixel Code -->
+
   <title>Propiedades Collipulli | Venta y Arriendo</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -61,6 +105,26 @@
     <p>© 2026 Propiedades Collipulli</p>
   </footer>
 
+  <div id="cookie-banner" class="fixed bottom-4 left-4 right-4 bg-white shadow-2xl rounded-xl p-4 z-50 border">
+    <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+      <p class="text-sm text-gray-700">
+        Utilizamos cookies para análisis y publicidad personalizada.
+      </p>
+
+      <div class="flex gap-3">
+        <button onclick="acceptCookies()"
+                class="bg-blue-900 text-white px-4 py-2 rounded-lg font-bold">
+          Aceptar
+        </button>
+
+        <button onclick="rejectCookies()"
+                class="bg-gray-200 px-4 py-2 rounded-lg">
+          Rechazar
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const propiedadesContainer = document.getElementById("propiedades-container");
 
@@ -96,15 +160,6 @@
         .catch(() => alert("No se pudo copiar el enlace"));
     }
 
-    function shareOnFacebook(url) {
-      const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
-      window.open(
-        facebookShareUrl,
-        "facebook-share-dialog",
-        "width=626,height=436,resizable=yes,scrollbars=yes"
-      );
-    }
-
     function getAbsolutePropertyUrl(propiedadId) {
       return new URL(`propiedad.html?id=${propiedadId}`, window.location.href).href;
     }
@@ -117,6 +172,7 @@
       const whatsappNumero = "56989296908";
       const propertyUrl = `propiedad.html?id=${propiedad.id}`;
       const absolutePropertyUrl = getAbsolutePropertyUrl(propiedad.id);
+      const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(absolutePropertyUrl)}`;
 
       const mensaje = encodeURIComponent(
         `Hola, me interesa la propiedad: ${propiedad.titulo} en ${propiedad.ubicacion}. ${absolutePropertyUrl}`
@@ -151,16 +207,18 @@
             <div class="flex gap-3 mb-4 border-t pt-3 items-center" onclick="event.stopPropagation()">
               <span class="text-xs text-gray-400 self-center mr-1">Compartir:</span>
 
-              <button
-                type="button"
-                onclick="event.stopPropagation(); shareOnFacebook('${absolutePropertyUrl}')"
+              <a
+                href="${facebookShareUrl}"
+                target="_blank"
+                rel="noopener noreferrer"
+                onclick="event.stopPropagation()"
                 class="text-blue-600 hover:scale-110 transition-transform"
                 title="Compartir en Facebook"
               >
                 <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
                 </svg>
-              </button>
+              </a>
 
               <a
                 href="${whatsappShareLink}"
@@ -232,6 +290,43 @@
         `;
       }
     }
+
+    function acceptCookies() {
+      localStorage.setItem('cookiesAccepted', 'true');
+
+      gtag('consent', 'update', {
+        analytics_storage: 'granted',
+        ad_storage: 'granted',
+        ad_user_data: 'granted',
+        ad_personalization: 'granted'
+      });
+
+      document.getElementById('cookie-banner').style.display = 'none';
+    }
+
+    function rejectCookies() {
+      localStorage.setItem('cookiesAccepted', 'false');
+      document.getElementById('cookie-banner').style.display = 'none';
+    }
+
+    window.addEventListener('load', function() {
+      const consent = localStorage.getItem('cookiesAccepted');
+
+      if (consent === 'true') {
+        gtag('consent', 'update', {
+          analytics_storage: 'granted',
+          ad_storage: 'granted',
+          ad_user_data: 'granted',
+          ad_personalization: 'granted'
+        });
+
+        document.getElementById('cookie-banner').style.display = 'none';
+      }
+
+      if (consent === 'false') {
+        document.getElementById('cookie-banner').style.display = 'none';
+      }
+    });
 
     cargarPropiedades();
   </script>
