@@ -3,7 +3,66 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>Detalle de Propiedad | Propiedades Collipulli</title>
+  <meta name="description" content="Propiedades en venta y arriendo en Collipulli. Revisa casas, parcelas y oportunidades inmobiliarias en Propiedades Collipulli.">
+
+  <!-- Open Graph general -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Propiedades Collipulli">
+  <meta property="og:title" content="Propiedades Collipulli | Detalle de Propiedad">
+  <meta property="og:description" content="Revisa propiedades en venta y arriendo en Collipulli.">
+  <meta property="og:image" content="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80">
+  <meta property="og:url" content="https://propiedadescollipulli.cl/propiedad.html">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Propiedades Collipulli | Detalle de Propiedad">
+  <meta name="twitter:description" content="Revisa propiedades en venta y arriendo en Collipulli.">
+  <meta name="twitter:image" content="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80">
+
+  <!-- Google tag (GA4) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-LXD6M6B2HH"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+
+    gtag('consent', 'default', {
+      analytics_storage: 'denied',
+      ad_storage: 'denied',
+      ad_user_data: 'denied',
+      ad_personalization: 'denied'
+    });
+
+    gtag('js', new Date());
+    gtag('config', 'G-LXD6M6B2HH');
+  </script>
+
+  <!-- Meta Pixel Code -->
+  <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;
+    n.push=n;
+    n.loaded=!0;
+    n.version='2.0';
+    n.queue=[];
+    t=b.createElement(e);
+    t.async=!0;
+    t.src=v;
+    s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}
+    (window, document,'script','https://connect.facebook.net/en_US/fbevents.js');
+
+    fbq('init', '26941683598762270');
+    fbq('track', 'PageView');
+  </script>
+  <noscript>
+    <img height="1" width="1" style="display:none"
+         src="https://www.facebook.com/tr?id=26941683598762270&ev=PageView&noscript=1"/>
+  </noscript>
+  <!-- End Meta Pixel Code -->
+
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 font-sans min-h-screen flex flex-col">
@@ -26,6 +85,26 @@
   <footer class="bg-gray-800 text-gray-400 py-6 text-center text-sm">
     <p>© 2026 Propiedades Collipulli</p>
   </footer>
+
+  <div id="cookie-banner" class="fixed bottom-4 left-4 right-4 bg-white shadow-2xl rounded-xl p-4 z-50 border">
+    <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+      <p class="text-sm text-gray-700">
+        Utilizamos cookies para análisis y publicidad personalizada.
+      </p>
+
+      <div class="flex gap-3">
+        <button onclick="acceptCookies()"
+                class="bg-blue-900 text-white px-4 py-2 rounded-lg font-bold">
+          Aceptar
+        </button>
+
+        <button onclick="rejectCookies()"
+                class="bg-gray-200 px-4 py-2 rounded-lg">
+          Rechazar
+        </button>
+      </div>
+    </div>
+  </div>
 
   <script>
     const propertyDetail = document.getElementById("property-detail");
@@ -61,7 +140,6 @@
         return String(propiedad.estado).toLowerCase();
       }
 
-      // Compatibilidad con propiedades antiguas
       if (typeof propiedad.disponible === "boolean") {
         return propiedad.disponible ? "disponible" : "vendida";
       }
@@ -81,6 +159,31 @@
       }
 
       return `<span class="inline-block text-sm font-bold bg-green-500 text-white px-4 py-2 rounded-full shadow">DISPONIBLE</span>`;
+    }
+
+    function updateGeneralMetaTags(propiedad) {
+      const titulo = propiedad.titulo || "Detalle de Propiedad";
+      const descripcion = (propiedad.descripcion || "Revisa propiedades en venta y arriendo en Collipulli.")
+        .replace(/\n/g, " ")
+        .slice(0, 180);
+      const imagen = getMainImage(propiedad);
+      const urlActual = window.location.href;
+
+      document.title = `${titulo} | Propiedades Collipulli`;
+
+      const setMeta = (selector, value) => {
+        const el = document.querySelector(selector);
+        if (el) el.setAttribute("content", value);
+      };
+
+      setMeta('meta[name="description"]', descripcion);
+      setMeta('meta[property="og:title"]', `${titulo} | Propiedades Collipulli`);
+      setMeta('meta[property="og:description"]', descripcion);
+      setMeta('meta[property="og:image"]', imagen);
+      setMeta('meta[property="og:url"]', urlActual);
+      setMeta('meta[name="twitter:title"]', `${titulo} | Propiedades Collipulli`);
+      setMeta('meta[name="twitter:description"]', descripcion);
+      setMeta('meta[name="twitter:image"]', imagen);
     }
 
     function renderGallery(propiedad) {
@@ -160,7 +263,7 @@
       );
       const whatsappLink = `https://wa.me/${whatsappNumero}?text=${mensaje}`;
 
-      document.title = `${propiedad.titulo || "Detalle de Propiedad"} | Propiedades Collipulli`;
+      updateGeneralMetaTags(propiedad);
 
       propertyDetail.innerHTML = `
         <div class="bg-white rounded-3xl shadow-xl p-4 md:p-8">
@@ -209,6 +312,7 @@
                 <a
                   href="${whatsappLink}"
                   target="_blank"
+                  rel="noopener noreferrer"
                   class="block w-full text-center bg-green-500 text-white py-4 rounded-xl font-bold text-lg hover:bg-green-600 transition shadow-md mb-3"
                 >
                   Consultar por WhatsApp
@@ -268,6 +372,43 @@
         `;
       }
     }
+
+    function acceptCookies() {
+      localStorage.setItem('cookiesAccepted', 'true');
+
+      gtag('consent', 'update', {
+        analytics_storage: 'granted',
+        ad_storage: 'granted',
+        ad_user_data: 'granted',
+        ad_personalization: 'granted'
+      });
+
+      document.getElementById('cookie-banner').style.display = 'none';
+    }
+
+    function rejectCookies() {
+      localStorage.setItem('cookiesAccepted', 'false');
+      document.getElementById('cookie-banner').style.display = 'none';
+    }
+
+    window.addEventListener('load', function() {
+      const consent = localStorage.getItem('cookiesAccepted');
+
+      if (consent === 'true') {
+        gtag('consent', 'update', {
+          analytics_storage: 'granted',
+          ad_storage: 'granted',
+          ad_user_data: 'granted',
+          ad_personalization: 'granted'
+        });
+
+        document.getElementById('cookie-banner').style.display = 'none';
+      }
+
+      if (consent === 'false') {
+        document.getElementById('cookie-banner').style.display = 'none';
+      }
+    });
 
     loadProperty();
   </script>
