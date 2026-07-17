@@ -3,10 +3,23 @@
 
   <url>
     <loc>https://propiedadescollipulli.cl/</loc>
-    <lastmod>2026-04-12</lastmod>
+    <lastmod>2026-07-17</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
+
+  <url>
+    <loc>https://propiedadescollipulli.cl/vender-propiedad-collipulli.html</loc>
+    <lastmod>2026-07-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.95</priority>
+  </url>
+
+  <url><loc>https://propiedadescollipulli.cl/propiedades-collipulli.html</loc><lastmod>2026-07-17</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://propiedadescollipulli.cl/propiedades-victoria.html</loc><lastmod>2026-07-17</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://propiedadescollipulli.cl/propiedades-ercilla.html</loc><lastmod>2026-07-17</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://propiedadescollipulli.cl/propiedades-angol.html</loc><lastmod>2026-07-17</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://propiedadescollipulli.cl/propiedades-renaico.html</loc><lastmod>2026-07-17</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
 
   <url>
     <loc>https://propiedadescollipulli.cl/parcelas-angol.html</loc>
