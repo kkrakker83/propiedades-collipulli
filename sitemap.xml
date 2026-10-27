@@ -1,45 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-
-  <url>
-    <loc>https://propiedadescollipulli.cl/</loc>
-    <lastmod>2026-07-17</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-
-  <url>
-    <loc>https://propiedadescollipulli.cl/vender-propiedad-collipulli.html</loc>
-    <lastmod>2026-07-17</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.95</priority>
-  </url>
-
-  <url><loc>https://propiedadescollipulli.cl/propiedades-collipulli.html</loc><lastmod>2026-07-17</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://propiedadescollipulli.cl/propiedades-victoria.html</loc><lastmod>2026-07-17</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://propiedadescollipulli.cl/propiedades-ercilla.html</loc><lastmod>2026-07-17</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://propiedadescollipulli.cl/propiedades-angol.html</loc><lastmod>2026-07-17</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://propiedadescollipulli.cl/propiedades-renaico.html</loc><lastmod>2026-07-17</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
-
-  <url>
-    <loc>https://propiedadescollipulli.cl/parcelas-angol.html</loc>
-    <lastmod>2026-04-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-
-  <url>
-    <loc>https://propiedadescollipulli.cl/casas-collipulli.html</loc>
-    <lastmod>2026-04-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-
-  <url>
-    <loc>https://propiedadescollipulli.cl/arriendos-victoria.html</loc>
-    <lastmod>2026-04-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-
+  <url><loc>https://propiedadescollipulli.cl/arriendos-victoria.html</loc></url>
+  <url><loc>https://propiedadescollipulli.cl/casas-collipulli.html</loc></url>
+  <url><loc>https://propiedadescollipulli.cl/</loc></url>
+  <url><loc>https://propiedadescollipulli.cl/parcelas-angol.html</loc></url>
+  <url><loc>https://propiedadescollipulli.cl/propiedades-angol.html</loc></url>
+  <url><loc>https://propiedadescollipulli.cl/propiedades-collipulli.html</loc></url>
+  <url><loc>https://propiedadescollipulli.cl/propiedades-ercilla.html</loc></url>
+  <url><loc>https://propiedadescollipulli.cl/propiedades-renaico.html</loc></url>
+  <url><loc>https://propiedadescollipulli.cl/propiedades-victoria.html</loc></url>
+  <url><loc>https://propiedadescollipulli.cl/vender-propiedad-collipulli.html</loc></url>
+  <url><loc>https://propiedadescollipulli.cl/propiedades/1773283603317.html</loc></url>
+  <url><loc>https://propiedadescollipulli.cl/propiedades/1775525882964.html</loc></url>
+  <url><loc>https://propiedadescollipulli.cl/propiedades/1775526178600.html</loc></url>
+  <url><loc>https://propiedadescollipulli.cl/propiedades/1775526438362.html</loc></url>
+  <url><loc>https://propiedadescollipulli.cl/propiedades/1775526657595.html</loc></url>
+  <url><loc>https://propiedadescollipulli.cl/propiedades/1775526813524.html</loc></url>
+  <url><loc>https://propiedadescollipulli.cl/propiedades/1775949023858.html</loc></url>
+  <url><loc>https://propiedadescollipulli.cl/propiedades/1776965253686.html</loc></url>
+  <url><loc>https://propiedadescollipulli.cl/propiedades/1778030038444.html</loc></url>
+  <url><loc>https://propiedadescollipulli.cl/propiedades/1778812542090.html</loc></url>
+  <url><loc>https://propiedadescollipulli.cl/propiedades/1784339014155.html</loc></url>
 </urlset>
