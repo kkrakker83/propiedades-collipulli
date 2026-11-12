@@ -6,6 +6,7 @@ import argparse
 import html
 import json
 import re
+import unicodedata
 import urllib.request
 from datetime import date
 from pathlib import Path
@@ -27,13 +28,40 @@ assert isinstance(properties, list) and properties, 'Empty or invalid catalog; r
 assert all(str(p.get('id', '')).isdigit() and p.get('titulo') for p in properties)
 assert len({p['id'] for p in properties}) == len(properties), 'Duplicate property ID'
 titles = json.loads((ROOT/'seo-titles.json').read_text(encoding='utf-8'))
+facets = json.loads((ROOT/'catalog-facets.json').read_text(encoding='utf-8'))
 ids = [str(p['id']) for p in properties]
 today = date.today().isoformat()
-config = '<script type="application/json" id="catalog-config">'+json.dumps({'ids': ids, 'titles': titles},ensure_ascii=False).replace('<','\\u003c')+'</script><script src="/assets/catalog.js" defer></script>'
+config = '<script type="application/json" id="catalog-config">'+json.dumps({'ids': ids, 'titles': titles, 'facets': {id: facets[id] for id in ids if id in facets}},ensure_ascii=False).replace('<','\\u003c')+'</script><script src="/assets/catalog.js" defer></script>'
 def dump(value):
     return json.dumps(value,ensure_ascii=False).replace('<','\\u003c')
 def path(p): return '/propiedades/'+str(p['id'])+'.html'
 def name(p): return titles.get(str(p['id']), p['titulo'])
+
+def normalized(value):
+    return ''.join(c for c in unicodedata.normalize('NFD', str(value or '')) if not unicodedata.combining(c)).lower().strip()
+
+def classification(p):
+    saved = facets.get(str(p['id']), {})
+    text = normalized(p.get('titulo', '')+' '+p.get('ubicacion', ''))
+    # Structured live fields take precedence; reviewed facts cover promotional titles.
+    comuna = normalized(p.get('comuna') or saved.get('comuna'))
+    if not comuna:
+        comuna = next((c for c in ['collipulli','angol','victoria','ercilla','renaico','cholchol'] if re.search(r'\b'+c+r'\b', text)), '')
+    tipo = normalized(p.get('tipo') or saved.get('tipo'))
+    if not tipo:
+        tipo = next((t for t in ['parcela','predio','terreno','casa'] if re.search(r'\b'+t+r's?\b', text)), '')
+    operacion = normalized(p.get('operacion'))
+    if not operacion:
+        operacion = 'arriendo' if re.search(r'\b(arriendo|arrendar|alquiler)\b', text) else normalized(saved.get('operacion'))
+    if not operacion and re.search(r'\b(venta|vender)\b', text): operacion = 'venta'
+    return comuna, tipo, operacion
+
+def matches(p, filter_name):
+    comuna, tipo, operacion = classification(p)
+    if filter_name == 'casas-collipulli': return comuna == 'collipulli' and tipo == 'casa' and operacion == 'venta'
+    if filter_name == 'parcelas-angol': return comuna == 'angol' and tipo in ['parcela','predio','terreno'] and operacion == 'venta'
+    if filter_name in ['collipulli','angol']: return comuna == filter_name
+    return True
 def contact(p): return 'https://wa.me/56989296908?text='+quote('Hola, quiero consultar por '+name(p)+'. '+ORIGIN+path(p))
 def images(p): return list(dict.fromkeys(u for u in [p.get('imagenUrl'), *p.get('galeria',[])] if u and u.startswith('https://')))
 def card(p):
@@ -67,10 +95,10 @@ else:
     text=re.sub(r'<div id="propiedades-container".*?<\/div>\s*<\/div>', '<!-- catalog-start -->'+catalog(properties)+'<!-- catalog-end -->',text,count=1,flags=re.S)
 index.write_text(text,encoding='utf-8')
 
-for filename,filter_name in [('casas-collipulli.html','casas-collipulli'),('parcelas-angol.html','angol'),('propiedades-angol.html','angol'),('propiedades-collipulli.html','collipulli')]:
-    rows=[p for p in properties if ('angol' in (p['titulo']+' '+p.get('ubicacion','')).lower() if filter_name=='angol' else 'collipulli' in (p['titulo']+' '+p.get('ubicacion','')).lower() and (filter_name!='casas-collipulli' or 'casa' in p['titulo'].lower()))]
+for filename,filter_name in [('casas-collipulli.html','casas-collipulli'),('parcelas-angol.html','parcelas-angol'),('propiedades-angol.html','angol'),('propiedades-collipulli.html','collipulli')]:
+    rows=[p for p in properties if matches(p,filter_name)]
     file=ROOT/filename; text=file.read_text(encoding='utf-8')
-    block='<section class="mt-8" aria-label="Publicaciones del catálogo"><h2 class="text-2xl font-bold text-blue-900 mb-4">Publicaciones para consultar</h2>'+catalog(rows,filter_name)+'</section>'
+    block='<section id="catalogo" class="mt-8" aria-label="Publicaciones del catálogo"><h2 class="text-2xl font-bold text-blue-900 mb-4">Publicaciones para consultar</h2>'+catalog(rows,filter_name)+'</section>'
     if '<!-- catalog-start -->' in text: text=re.sub(r'<!-- catalog-start -->.*?<!-- catalog-end -->','<!-- catalog-start -->'+block+'<!-- catalog-end -->',text,flags=re.S)
     else: text=text.replace('</main>','<!-- catalog-start -->'+block+'<!-- catalog-end --></main>')
     file.write_text(text,encoding='utf-8')

@@ -5,7 +5,7 @@
   const source = 'https://propiedades-collipulli-assets.s3.amazonaws.com/data/propiedades.json';
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const safeURL = value => { try { const u = new URL(value); return u.protocol === 'https:' ? u.href : ''; } catch { return ''; } };
-  const normalized = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const normalized = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
   const config = JSON.parse(document.getElementById('catalog-config')?.textContent || '{}');
   const knownIds = config.ids || [];
   const path = id => knownIds.includes(String(id)) ? `/propiedades/${encodeURIComponent(id)}.html` : `/propiedad.html?id=${encodeURIComponent(id)}`;
@@ -21,10 +21,14 @@
     <p class="text-2xl font-black text-blue-900 mt-auto">${esc(p.precio || 'Consultar precio')}</p>
     <div class="flex flex-wrap gap-3 mt-4"><a class="bg-blue-900 text-white px-4 py-2 rounded-lg font-bold" href="${path(p.id)}">Ver ficha</a><a class="bg-green-700 text-white px-4 py-2 rounded-lg font-bold" href="${contact(p)}" target="_blank" rel="noopener noreferrer">Consultar</a></div></div></article>`;
   function matches(p, filter) {
-    const text = normalized(`${p.titulo} ${p.ubicacion}`);
-    if (filter === 'angol') return text.includes('angol');
-    if (filter === 'casas-collipulli') return text.includes('collipulli') && text.includes('casa');
-    if (filter === 'collipulli') return text.includes('collipulli');
+    const saved = config.facets?.[String(p.id)] || {};
+    const text = normalized(`${p.titulo || ''} ${p.ubicacion || ''}`);
+    const comuna = normalized(p.comuna || saved.comuna) || ['collipulli','angol','victoria','ercilla','renaico','cholchol'].find(c => new RegExp(`\\b${c}\\b`).test(text)) || '';
+    const tipo = normalized(p.tipo || saved.tipo) || ['parcela','predio','terreno','casa'].find(t => new RegExp(`\\b${t}s?\\b`).test(text)) || '';
+    const operacion = normalized(p.operacion) || (/\b(arriendo|arrendar|alquiler)\b/.test(text) ? 'arriendo' : normalized(saved.operacion)) || (/\b(venta|vender)\b/.test(text) ? 'venta' : '');
+    if (filter === 'casas-collipulli') return comuna === 'collipulli' && tipo === 'casa' && operacion === 'venta';
+    if (filter === 'parcelas-angol') return comuna === 'angol' && ['parcela','predio','terreno'].includes(tipo) && operacion === 'venta';
+    if (filter === 'collipulli' || filter === 'angol') return comuna === filter;
     return true;
   }
   function updateMeta(p) {
