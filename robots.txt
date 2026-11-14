@@ -1,22 +1,33 @@
+# Public pages may be indexed. Administrative pages keep their existing noindex.
 User-agent: *
 Allow: /
 
-User-agent: GPTBot
-Allow: /
-
+# Search and user-directed retrieval; separate from model-training preferences.
 User-agent: OAI-SearchBot
 Allow: /
 
 User-agent: ChatGPT-User
 Allow: /
 
-User-agent: ClaudeBot
+User-agent: Claude-SearchBot
 Allow: /
 
-User-agent: Google-Extended
+User-agent: Claude-User
 Allow: /
+
+# Align training-only crawlers with the existing Cloudflare training restriction.
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
 
 User-agent: Applebot-Extended
+Disallow: /
+
+# Existing origin preference retained pending reconciliation with Cloudflare.
+# Google-Extended controls both Gemini grounding and model training.
+User-agent: Google-Extended
 Allow: /
 
 Sitemap: https://propiedadescollipulli.cl/sitemap.xml
